@@ -1,0 +1,40 @@
+{
+    "name": "helori/php-sign",
+    "description": "A framework agnostic PHP library to sign PDF documents",
+    "keywords": ["php", "sign", "signature", "docusign", "universign", "yousign"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Helori Lanos",
+            "email": "helori@algoart.fr",
+            "homepage": "https://algoart.fr"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/helori/php-sign.git"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Helori\\PhpSign\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=7.0.0",
+        "docusign/esign-client": "^3.0",
+        "globalis/universign-service": "^0.1.6",
+        "yousign/yousign-api-client": "^2.0"
+    },
+    "require-dev": {
+        
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Helori\\PhpSign\\PhpSignServiceProvider"
+            ]
+        }
+    }
+}
