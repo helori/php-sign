@@ -10,7 +10,7 @@ class Signer
     /**
      * The signer's id
      *
-     * @var integer
+     * @var int
      */
     protected $id;
 
@@ -62,7 +62,7 @@ class Signer
     /**
      * Get the signer's id
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -72,10 +72,10 @@ class Signer
     /**
      * Set the signer's id
      *
-     * @param  integer  $id
-     * @return integer
+     * @param  int  $id
+     * @return int
      */
-    public function setId(integer $id)
+    public function setId(int $id)
     {
         return $this->id = $id;
     }

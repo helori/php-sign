@@ -1,6 +1,6 @@
 <?php
 
-namespace Helori\PhpSign\Exception;
+namespace Helori\PhpSign\Exceptions;
 
 
 class ValidationException extends SignException

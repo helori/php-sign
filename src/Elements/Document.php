@@ -8,7 +8,7 @@ class Document
     /**
      * The document id
      *
-     * @var integer
+     * @var int
      */
     protected $id;
 
@@ -39,7 +39,7 @@ class Document
     /**
      * Get the document's id
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -49,10 +49,10 @@ class Document
     /**
      * Set the document's id
      *
-     * @param  integer  $id
-     * @return integer
+     * @param  int  $id
+     * @return int
      */
-    public function setId(integer $id)
+    public function setId(int $id)
     {
         return $this->id = $id;
     }

@@ -10,14 +10,14 @@ class Signature
     /**
      * The signer id
      *
-     * @var integer
+     * @var int
      */
     protected $signerId;
 
     /**
      * The document id
      *
-     * @var integer
+     * @var int
      */
     protected $documentId;
 
@@ -31,35 +31,35 @@ class Signature
     /**
      * The page of the document on which the signature should appear
      *
-     * @var integer
+     * @var int
      */
     protected $page;
 
     /**
      * The x coordinate of the signature rectangle
      *
-     * @var integer
+     * @var int
      */
     protected $x;
 
     /**
      * The y coordinate of the signature rectangle
      *
-     * @var integer
+     * @var int
      */
     protected $y;
 
     /**
      * The width of the signature rectangle
      *
-     * @var integer
+     * @var int
      */
     protected $width;
 
     /**
      * The height of the signature rectangle
      *
-     * @var integer
+     * @var int
      */
     protected $height;
 
@@ -76,7 +76,7 @@ class Signature
     /**
      * Get the signer id
      *
-     * @return integer
+     * @return int
      */
     public function getSignerId()
     {
@@ -86,10 +86,10 @@ class Signature
     /**
      * Set the signer id
      *
-     * @param  integer  $signerId
-     * @return integer
+     * @param  int  $signerId
+     * @return int
      */
-    public function setSignerId(integer $signerId)
+    public function setSignerId(int $signerId)
     {
         return $this->signerId = $signerId;
     }
@@ -97,7 +97,7 @@ class Signature
     /**
      * Get the document id
      *
-     * @return integer
+     * @return int
      */
     public function getDocumentId()
     {
@@ -107,10 +107,10 @@ class Signature
     /**
      * Set the document id
      *
-     * @param  integer  $documentId
-     * @return integer
+     * @param  int  $documentId
+     * @return int
      */
-    public function setDocumentId(integer $documentId)
+    public function setDocumentId(int $documentId)
     {
         return $this->documentId = $documentId;
     }
@@ -131,7 +131,7 @@ class Signature
      * @param  string  $label
      * @return string
      */
-    public function setLabel(integer $label)
+    public function setLabel(string $label)
     {
         return $this->label = $label;
     }
@@ -139,7 +139,7 @@ class Signature
     /**
      * Get the page of the document on which the signature should appear
      *
-     * @return integer
+     * @return int
      */
     public function getPage()
     {
@@ -149,10 +149,10 @@ class Signature
     /**
      * Set the page of the document on which the signature should appear
      *
-     * @param  integer  $page
-     * @return integer
+     * @param  int  $page
+     * @return int
      */
-    public function setPage(integer $page)
+    public function setPage(int $page)
     {
         return $this->page = $page;
     }
@@ -160,7 +160,7 @@ class Signature
     /**
      * Get the x coordinate of the signature rectangle
      *
-     * @return integer
+     * @return int
      */
     public function getX()
     {
@@ -170,10 +170,10 @@ class Signature
     /**
      * Set the x coordinate of the signature rectangle
      *
-     * @param  integer  $x
-     * @return integer
+     * @param  int  $x
+     * @return int
      */
-    public function setX(integer $x)
+    public function setX(int $x)
     {
         return $this->x = $x;
     }
@@ -181,7 +181,7 @@ class Signature
     /**
      * Get the y coordinate of the signature rectangle
      *
-     * @return integer
+     * @return int
      */
     public function getY()
     {
@@ -191,10 +191,10 @@ class Signature
     /**
      * Set the y coordinate of the signature rectangle
      *
-     * @param  integer  $y
-     * @return integer
+     * @param  int  $y
+     * @return int
      */
-    public function setY(integer $y)
+    public function setY(int $y)
     {
         return $this->y = $y;
     }
@@ -202,7 +202,7 @@ class Signature
     /**
      * Get the width of the signature rectangle
      *
-     * @return integer
+     * @return int
      */
     public function getWidth()
     {
@@ -212,10 +212,10 @@ class Signature
     /**
      * Set the width of the signature rectangle
      *
-     * @param  integer  $width
-     * @return integer
+     * @param  int  $width
+     * @return int
      */
-    public function setWidth(integer $width)
+    public function setWidth(int $width)
     {
         return $this->width = $width;
     }
@@ -223,7 +223,7 @@ class Signature
     /**
      * Get the height of the signature rectangle
      *
-     * @return integer
+     * @return int
      */
     public function getHeight()
     {
@@ -233,10 +233,10 @@ class Signature
     /**
      * Set the height of the signature rectangle
      *
-     * @param  integer  $height
-     * @return integer
+     * @param  int  $height
+     * @return int
      */
-    public function setHeight(integer $height)
+    public function setHeight(int $height)
     {
         return $this->height = $height;
     }

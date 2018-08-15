@@ -83,7 +83,7 @@ class Scenario
     public function setSigners(array $signers)
     {
         foreach($signers as $signer){
-            $this->setSigner($signer)
+            $this->setSigner($signer);
         }
 
         return $this->signers;
@@ -120,7 +120,7 @@ class Scenario
     public function setDocuments(array $documents)
     {
         foreach($documents as $document){
-            $this->setDocument($document)
+            $this->setDocument($document);
         }
 
         return $this->documents;
@@ -157,7 +157,7 @@ class Scenario
     public function setSignatures(array $signatures)
     {
         foreach($signatures as $signature){
-            $this->setSignature($signature)
+            $this->setSignature($signature);
         }
 
         return $this->signatures;

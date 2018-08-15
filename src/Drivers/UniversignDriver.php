@@ -31,7 +31,7 @@ class UniversignDriver implements DriverInterface
 		$client = new \PhpXmlRpc\Client($config['endpoint']);
 		$client->setCredentials(
 		    $config['username'],
-		    $config['password'],
+		    $config['password']
 		);
 
 		$this->requester = new Requester($client);
@@ -115,7 +115,7 @@ class UniversignDriver implements DriverInterface
     	$request->setFinalDocRequesterSent(true);
     	$request->setChainingMode(TransactionRequest::CHAINING_MODE_WEB);
     	$request->setProfile('default');
-    	$request->setCertificateTypes('simple');
+    	$request->setCertificateType('simple');
     	$request->setLanguage('fr');
 
 		// Return a \Globalis\Universign\Response\TransactionResponse (with transaction url and id)

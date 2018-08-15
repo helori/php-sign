@@ -3,6 +3,7 @@
 namespace Helori\PhpSign\Elements;
 
 use Helori\PhpSign\Exceptions\ValidationException;
+use Helori\PhpSign\Drivers\DriverInterface;
 
 
 class Requester
@@ -23,7 +24,7 @@ class Requester
      */
     public function __construct(string $driverName, array $driverConfig)
     {
-        $name = ucfirst(strtolower($driverName)).'Driver';
+        $name = '\\Helori\\PhpSign\\Drivers\\'.ucfirst(strtolower($driverName)).'Driver';
 
         if(class_exists($name) && is_subclass_of($name, DriverInterface::class)){
 
@@ -31,7 +32,7 @@ class Requester
 
         }else{
 
-            throw new ValidationException('Unknown driver name "'.$driverName.'"');
+            throw new ValidationException('Unknown driver name "'.$driverName.'" with class name "'.$name.'"');
         }
     }
 
