@@ -98,7 +98,7 @@ class Signer
      */
     public function setFirstname(string $firstname)
     {
-        return $this->firstname = $firstname;
+        return $this->firstname = ucfirst(strtolower($firstname));
     }
 
     /**
@@ -119,7 +119,17 @@ class Signer
      */
     public function setLastname(string $lastname)
     {
-        return $this->lastname = $lastname;
+        return $this->lastname = strtoupper($lastname);
+    }
+
+    /**
+     * Get the signer's fullname (firstname + lastname)
+     *
+     * @return string
+     */
+    public function getFullname()
+    {
+        return $this->firstname.' '.$this->lastname;
     }
 
     /**

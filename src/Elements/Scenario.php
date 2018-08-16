@@ -2,6 +2,8 @@
 
 namespace Helori\PhpSign\Elements;
 
+use Helori\PhpSign\Exceptions\NotFoundException;
+
 
 class Scenario
 {
@@ -75,6 +77,28 @@ class Scenario
     }
 
     /**
+     * Get a specific signer from its id
+     *
+     * @return Signer
+     */
+    public function getSigner(int $id)
+    {
+        $signer = null;
+
+        foreach($this->signers as $signer){
+            if($signer->id === $id){
+                return $signer;
+            }
+        }
+
+        if(is_null($signer)){
+            throw new NotFoundException('Signer with id "'.$id.'" could not be found');
+        }
+
+        return $signer;
+    }
+
+    /**
      * Add new signers
      *
      * @param  array  $signers
@@ -109,6 +133,28 @@ class Scenario
     public function getDocuments()
     {
         return $this->documents;
+    }
+
+    /**
+     * Get a specific document from its id
+     *
+     * @return Document
+     */
+    public function getDocument(int $id)
+    {
+        $document = null;
+
+        foreach($this->documents as $document){
+            if($document->id === $id){
+                return $document;
+            }
+        }
+
+        if(is_null($document)){
+            throw new NotFoundException('Document with id "'.$id.'" could not be found');
+        }
+
+        return $document;
     }
 
     /**

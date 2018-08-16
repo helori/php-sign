@@ -10,6 +10,7 @@ use Globalis\Universign\Response\TransactionResponse;
 use Globalis\Universign\Requester;
 
 use Helori\PhpSign\Elements\Scenario;
+use Helori\PhpSign\Exceptions\ValidationException;
 
 
 class UniversignDriver implements DriverInterface
