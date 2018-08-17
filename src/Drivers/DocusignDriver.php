@@ -96,7 +96,18 @@ class DocusignDriver implements DriverInterface
             $signer->setEmail($scSigner->getEmail());
             $signer->setName($scSigner->getFullname());
             $signer->setRecipientId($scSigner->getId());
-            //$signer->setClientUserId('1001');
+            
+            // Set the recipient as "embedded" (instead of "remote") by setting a clientUserId
+            // When embedded, the recipient will not receive an email, except if EmbeddedRecipientStartUrl is specified
+            // Not specifying the clientUserId leaves the signer as "remote" : an email will be sent by docusign.
+            $signer->setClientUserId($scSigner->getId()); 
+
+            // If a clientUserId is set (= recipient is embedded) an email can be sent by docusign with a link to your app.
+            // The app is then responsible for authenticating the signer,
+            // and must generate a signingView URL to redirect the signer.
+            // Setting the magic value 'SIGN_AT_DOCUSIGN' causes the recipient to be both embedded,
+            // and receive an official "please sign" email from DocuSign.
+            $signer->setEmbeddedRecipientStartUrl(null);
             
             $signHereTabs = [];
 
@@ -135,8 +146,8 @@ class DocusignDriver implements DriverInterface
 
         // Create envelope and set envelope status to "sent" to immediately send the signature request
         $envelopeDefinition = new EnvelopeDefinition();
-        //$envelopeDefinition->setEmailSubject("[DocuSign PHP SDK] - Please sign this doc");
-        $envelopeDefinition->setStatus('created'); 
+        $envelopeDefinition->setEmailSubject("[DocuSign PHP SDK] - Please sign this doc");
+        $envelopeDefinition->setStatus('sent'); 
         $envelopeDefinition->setRecipients($recipients);
         $envelopeDefinition->setDocuments($documents);
 
@@ -147,22 +158,6 @@ class DocusignDriver implements DriverInterface
         $envelopeApi = new EnvelopesApi($this->client);
         $envelopeSummary = $envelopeApi->createEnvelope($this->accountId, $envelopeDefinition, $options);
         $envelopeId = $envelopeSummary->getEnvelopeId();
-
-        $signersUrls = [];
-
-        foreach($scenario->getSigners() as $scSigner){
-
-        	$recipientViewRequest = new RecipientViewRequest();
-	        $recipientViewRequest->setReturnUrl('https://algoart.fr/return');
-	        $recipientViewRequest->setAuthenticationMethod("email");
-	        $recipientViewRequest->setUserName($scSigner->getFullname());
-	        $recipientViewRequest->setEmail($scSigner->getEmail());
-            $recipientViewRequest->setRecipientId($scSigner->getId());
-            //$recipientViewRequest->setClientUserId('1001');
-
-	        $signingView = $envelopeApi->createRecipientView($this->accountId, $envelopeId, $recipientViewRequest);
-	        $signersUrls[$scSigner->getId()] = $signingView->getUrl();
-        }
 
         return $this->getTransaction($envelopeId);
     }
@@ -188,13 +183,17 @@ class DocusignDriver implements DriverInterface
 
         foreach($recipients->getSigners() as $signer){
 
+            // The signer URL has very short lifetime
+            // It can be re-generated as much as needed
+            // Use it quickly after retreiving it (making a redirect)
+
             $recipientViewRequest = new RecipientViewRequest();
             $recipientViewRequest->setReturnUrl('https://algoart.fr/return');
             $recipientViewRequest->setAuthenticationMethod("email");
             $recipientViewRequest->setUserName($signer->getName());
             $recipientViewRequest->setEmail($signer->getEmail());
             $recipientViewRequest->setRecipientId($signer->getRecipientId());
-            //$recipientViewRequest->setClientUserId('1001');
+            $recipientViewRequest->setClientUserId($signer->getClientUserId());
 
             $signingView = $envelopeApi->createRecipientView(
                 $this->accountId, 
@@ -210,9 +209,21 @@ class DocusignDriver implements DriverInterface
 
             $signersInfos[] = $signersInfo;
         }
-        
+
         $transaction->setSignersInfos($signersInfos);
 
         return $transaction;
+    }
+
+    /**
+     * Get transaction documents
+     *
+     * @param  string  $transactionId
+     * @return array
+     */
+    public function getDocuments(string $transactionId)
+    {
+        // TODO
+        return [];
     }
 }

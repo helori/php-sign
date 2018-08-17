@@ -57,4 +57,15 @@ class Requester
     {
         return $this->driver->getTransaction($transactionId);
     }
+
+    /**
+     * Get transaction documents
+     *
+     * @param  string  $transactionId
+     * @return array
+     */
+    public function getDocuments(string $transactionId)
+    {
+        return $this->driver->getDocuments($transactionId);
+    }
 }

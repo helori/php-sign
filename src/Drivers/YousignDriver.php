@@ -151,4 +151,16 @@ class YousignDriver implements DriverInterface
 
         return $transaction;
     }
+
+    /**
+     * Get transaction documents
+     *
+     * @param  string  $transactionId
+     * @return array
+     */
+    public function getDocuments(string $transactionId)
+    {
+        // TODO
+        return [];
+    }
 }

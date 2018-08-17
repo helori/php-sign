@@ -22,4 +22,12 @@ interface DriverInterface
      * @return Transaction
      */
     public function getTransaction(string $transactionId);
+
+    /**
+     * Get transaction documents
+     *
+     * @param  string  $transactionId
+     * @return array
+     */
+    public function getDocuments(string $transactionId);
 }
