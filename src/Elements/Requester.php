@@ -37,13 +37,24 @@ class Requester
     }
 
     /**
-     * Initialize a transaction from a scenario
+     * Create a transaction from a scenario
      *
      * @param  Scenario  $scenario
      * @return array
      */
-    public function initTransaction(Scenario $scenario)
+    public function createTransaction(Scenario $scenario)
     {
-        return $this->driver->initTransaction($scenario);
+        return $this->driver->createTransaction($scenario);
+    }
+
+    /**
+     * Get a transaction
+     *
+     * @param  string  $transactionId
+     * @return Transaction
+     */
+    public function getTransaction(string $transactionId)
+    {
+        return $this->driver->getTransaction($transactionId);
     }
 }

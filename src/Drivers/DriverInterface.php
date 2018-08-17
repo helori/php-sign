@@ -7,11 +7,19 @@ use Helori\PhpSign\Elements\Scenario;
 
 interface DriverInterface
 {
-    /**
-     * Initialize a transaction from a scenario
+	/**
+     * Create a transaction from a scenario
      *
      * @param  Helori\PhpSign\Elements\Scenario  $scenario
-     * @return array
+     * @return Transaction
      */
-    public function initTransaction(Scenario $scenario);
+    public function createTransaction(Scenario $scenario);
+
+    /**
+     * Get transaction info
+     *
+     * @param  string  $transactionId
+     * @return Transaction
+     */
+    public function getTransaction(string $transactionId);
 }

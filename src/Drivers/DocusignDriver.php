@@ -17,6 +17,7 @@ use DocuSign\eSign\Api\EnvelopesApi\CreateEnvelopeOptions;
 use DocuSign\eSign\Model\RecipientViewRequest;
 
 use Helori\PhpSign\Elements\Scenario;
+use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\DriverAuthException;
 
 
@@ -79,12 +80,12 @@ class DocusignDriver implements DriverInterface
     }
 
     /**
-     * Initialize a transaction from a scenario
+     * Create a transaction from a scenario
      *
      * @param  \Helori\PhpSign\Elements\Scenario  $scenario
      * @return array
      */
-    public function initTransaction(Scenario $scenario)
+    public function createTransaction(Scenario $scenario)
     {
     	$signers = [];
     	$documents = [];
@@ -95,7 +96,7 @@ class DocusignDriver implements DriverInterface
             $signer->setEmail($scSigner->getEmail());
             $signer->setName($scSigner->getFullname());
             $signer->setRecipientId($scSigner->getId());
-            //$signer->setClientUserId($scSigner->getId());
+            //$signer->setClientUserId('1001');
             
             $signHereTabs = [];
 
@@ -108,7 +109,7 @@ class DocusignDriver implements DriverInterface
 		            $signHere->setYPosition($scSignature->getY());
 		            $signHere->setDocumentId($scSignature->getDocumentId());
 		            $signHere->setPageNumber($scSignature->getPage());
-		            $signHere->setRecipientId($scSignature->getSignerId());
+		            $signHere->setRecipientId($scSigner->getId());
 		            $signHereTabs[] = $signHere;
             	}
             }
@@ -147,24 +148,71 @@ class DocusignDriver implements DriverInterface
         $envelopeSummary = $envelopeApi->createEnvelope($this->accountId, $envelopeDefinition, $options);
         $envelopeId = $envelopeSummary->getEnvelopeId();
 
-        $signers_urls = [];
+        $signersUrls = [];
 
         foreach($scenario->getSigners() as $scSigner){
 
         	$recipientViewRequest = new RecipientViewRequest();
 	        $recipientViewRequest->setReturnUrl('https://algoart.fr/return');
-	        //$recipientViewRequest->setClientUserId($scSigner->getId());
 	        $recipientViewRequest->setAuthenticationMethod("email");
 	        $recipientViewRequest->setUserName($scSigner->getFullname());
 	        $recipientViewRequest->setEmail($scSigner->getEmail());
+            $recipientViewRequest->setRecipientId($scSigner->getId());
+            //$recipientViewRequest->setClientUserId('1001');
 
 	        $signingView = $envelopeApi->createRecipientView($this->accountId, $envelopeId, $recipientViewRequest);
-	        $signers_urls[] = $signingView->getUrl();
+	        $signersUrls[$scSigner->getId()] = $signingView->getUrl();
         }
 
-        return [
-        	'envelope_id' => $envelopeId,
-        	'recipients_urls' => $signers_urls,
-        ];
+        return $this->getTransaction($envelopeId);
+    }
+
+    /**
+     * Get transaction
+     *
+     * @param  string  $transactionId
+     * @return Transaction
+     */
+    public function getTransaction(string $transactionId)
+    {
+        $envelopeApi = new EnvelopesApi($this->client);
+
+        $envelope = $envelopeApi->getEnvelope($this->accountId, $transactionId);
+        $recipients = $envelopeApi->listRecipients($this->accountId, $transactionId);
+
+        $transaction = new Transaction();
+        $transaction->setId($envelope->getEnvelopeId());
+        $transaction->setStatus($envelope->getStatus());
+
+        $signersInfos = [];
+
+        foreach($recipients->getSigners() as $signer){
+
+            $recipientViewRequest = new RecipientViewRequest();
+            $recipientViewRequest->setReturnUrl('https://algoart.fr/return');
+            $recipientViewRequest->setAuthenticationMethod("email");
+            $recipientViewRequest->setUserName($signer->getName());
+            $recipientViewRequest->setEmail($signer->getEmail());
+            $recipientViewRequest->setRecipientId($signer->getRecipientId());
+            //$recipientViewRequest->setClientUserId('1001');
+
+            $signingView = $envelopeApi->createRecipientView(
+                $this->accountId, 
+                $envelope->getEnvelopeId(), 
+                $recipientViewRequest);
+
+            $signersInfo = [
+                'status' => $signer->getStatus(),
+                'name' => $signer->getName(),
+                'email' => $signer->getEmail(),
+                'url' => $signingView->getUrl(),
+            ];
+
+            $signersInfos[] = $signersInfo;
+        }
+        
+        $transaction->setSignersInfos($signersInfos);
+
+        return $transaction;
     }
 }

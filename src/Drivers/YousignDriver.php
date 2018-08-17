@@ -2,13 +2,9 @@
 
 namespace Helori\PhpSign\Drivers;
 
-use Yousign\Authentication;
-use Yousign\ClientFactory;
-use Yousign\Environment;
-use Yousign\Client;
-
 use Helori\PhpSign\Utilities\RestApiRequester;
 use Helori\PhpSign\Elements\Scenario;
+use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\DriverAuthException;
 use Helori\PhpSign\Exceptions\ValidationException;
 
@@ -43,12 +39,12 @@ class YousignDriver implements DriverInterface
     }
 
     /**
-     * Initialize a transaction from a scenario
+     * Create a transaction from a scenario
      *
      * @param  \Helori\PhpSign\Elements\Scenario  $scenario
      * @return array
      */
-    public function initTransaction(Scenario $scenario)
+    public function createTransaction(Scenario $scenario)
     {
         $procedure = $this->requester->post('/procedures', [
             'name' => $scenario->getTitle(),
@@ -117,41 +113,42 @@ class YousignDriver implements DriverInterface
             'start' => true,
         ]);
 
+        return $this->getTransaction($procedure['id']);
+    }
+
+    /**
+     * Get transaction
+     *
+     * @param  string  $transactionId
+     * @return Transaction
+     */
+    public function getTransaction(string $transactionId)
+    {
+        $procedure = $this->requester->get($transactionId);
+
+        $transaction = new Transaction();
+        $transaction->setId($transactionId);
+        $transaction->setStatus($procedure['status']);
+
         $signUrlBase = 'https://staging-app.yousign.com/procedure/sign?';
-        $signUrls = [];
+        $signersInfos = [];
 
-        foreach($memberIds as $memberId){
+        foreach($procedure['members'] as $member){
 
-            $signUrls[] = $signUrlBase.http_build_query([
-                'members' => $memberId,
-                //'signature_uis' => '',
-            ]);
+            $signersInfo = [
+                'status' => $member['status'],
+                'url' => $signUrlBase.http_build_query(['members' => $member['id']]),
+                'firstname' => $member['firstname'],
+                'lastname' => $member['lastname'],
+                'email' => $member['email'],
+                'phone' => $member['phone'],
+            ];
+
+            $signersInfos[] = $signersInfo;
         }
 
-        return $signUrls;
-        
+        $transaction->setSignersInfos($signersInfos);
 
-        /*$signatureUi = $this->requester->post('/signature_uis', [
-            'name' => 'Signature UI',
-            'description' => '',
-            'defaultZoom' => 100,
-            'languages' => [ 'fr' ],
-            'defaultLanguage' => 'fr',
-            'redirectCancel' => [
-                'url' => '',
-                'target' => '_self_',
-                'auto' => false,
-            ],
-            'redirectError' => [
-                'url' => '',
-                'target' => '_self_',
-                'auto' => false,
-            ],
-            'redirectSuccess' => [
-                'url' => '',
-                'target' => '_self_',
-                'auto' => false,
-            ],
-        ]);*/
+        return $transaction;
     }
 }

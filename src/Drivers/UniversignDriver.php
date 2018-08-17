@@ -7,9 +7,11 @@ use Globalis\Universign\Request\DocSignatureField;
 use Globalis\Universign\Request\TransactionDocument;
 use Globalis\Universign\Request\TransactionRequest;
 use Globalis\Universign\Response\TransactionResponse;
+use Globalis\Universign\Response\TransactionInfo as UniversignTransactionInfo;
 use Globalis\Universign\Requester;
 
 use Helori\PhpSign\Elements\Scenario;
+use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\ValidationException;
 
 
@@ -39,12 +41,12 @@ class UniversignDriver implements DriverInterface
     }
 
     /**
-     * Initialize a transaction from a scenario
+     * Create a transaction from a scenario
      *
      * @param  \Helori\PhpSign\Elements\Scenario  $scenario
      * @return array
      */
-    public function initTransaction(Scenario $scenario)
+    public function createTransaction(Scenario $scenario)
     {
     	$signers = [];
     	$documents = [];
@@ -120,14 +122,75 @@ class UniversignDriver implements DriverInterface
     	$request->setLanguage('fr');
 
 		// Return a \Globalis\Universign\Response\TransactionResponse (with transaction url and id)
-		$response = $this->requester->requestTransaction($request);
+		$transactionResponse = $this->requester->requestTransaction($request);
 
-		$signatureUrl = $response->url;
-		$transactionId = $response->id;
+		return $this->getTransaction($transactionResponse->id);
+    }
 
-		return [
-			'id' => $transactionId,
-			'url' => $signatureUrl,
-		];
+    /**
+     * Get transaction
+     *
+     * @param  string  $transactionId
+     * @return Transaction
+     */
+    public function getTransaction(string $transactionId)
+    {
+        $transaction = new Transaction();
+        $transaction->setId($transactionId);
+
+        $transactionInfo = $this->requester->getTransactionInfo($transactionId);
+
+        $signersInfos = [];
+
+        foreach($transactionInfo->signerInfos as $signerInfo){
+
+            $signersInfo = [
+                'status' => $signerInfo->status,
+                'url' => $signerInfo->url,
+                'email' => $signerInfo->email,
+                'firstname' => $signerInfo->firstName,
+                'lastname' => $signerInfo->lastName,
+                //'error' => $signerInfo->error,
+                //'certificateInfo' => $signerInfo->certificateInfo,
+                //'actionDate' => $signerInfo->actionDate,
+                //'refusedDocs' => $signerInfo->refusedDocs,
+            ];
+
+            $signersInfos[] = $signersInfo;
+        }
+
+        $transaction->setSignersInfos($signersInfos);
+        
+        $transactionStatus = Transaction::STATUS_UNKNOWN;
+        switch ($transactionInfo->status) {
+
+        	case UniversignTransactionInfo::STATUS_READY:
+        		$transactionStatus = Transaction::STATUS_READY;
+        		break;
+
+        	case UniversignTransactionInfo::STATUS_EXPIRED:
+        		$transactionStatus = Transaction::STATUS_EXPIRED;
+        		break;
+
+        	case UniversignTransactionInfo::STATUS_CANCELED:
+        		$transactionStatus = Transaction::STATUS_CANCELED;
+        		break;
+
+        	case UniversignTransactionInfo::STATUS_FAILED:
+        		$transactionStatus = Transaction::STATUS_FAILED;
+        		break;
+
+        	case UniversignTransactionInfo::STATUS_COMPLETED:
+        		$transactionStatus = Transaction::STATUS_COMPLETED;
+        		break;
+        	
+        	default:
+        		$transactionStatus = Transaction::STATUS_UNKNOWN;
+        		break;
+        }
+
+        $transaction->setStatus($transactionStatus);
+
+        return $transaction;
     }
 }
