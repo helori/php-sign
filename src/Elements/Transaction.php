@@ -5,9 +5,11 @@ namespace Helori\PhpSign\Elements;
 
 class Transaction
 {
+    const STATUS_DRAFT = 'draft';
     const STATUS_READY = 'ready';
     const STATUS_EXPIRED = 'expired';
     const STATUS_CANCELED = 'canceled';
+    const STATUS_REFUSED = 'canceled';
     const STATUS_FAILED = 'failed';
     const STATUS_COMPLETED = 'completed';
     const STATUS_UNKNOWN = 'unknown';
@@ -32,6 +34,13 @@ class Transaction
      * @var array
      */
     protected $signersInfos;
+
+    /**
+     * The transaction signed files
+     *
+     * @var array
+     */
+    protected $signedFiles;
 
     /**
      * The transaction original data (from the driver)
@@ -111,6 +120,27 @@ class Transaction
     public function setSignersInfos(array $signersInfos)
     {
         return $this->signersInfos = $signersInfos;
+    }
+
+    /**
+     * Get the transaction signed files
+     *
+     * @return array
+     */
+    public function getSignedFiles()
+    {
+        return $this->signedFiles;
+    }
+
+    /**
+     * Set the transaction signers infos
+     *
+     * @param  array  $signedFiles
+     * @return array
+     */
+    public function setSignedFiles(array $signedFiles)
+    {
+        return $this->signedFiles = $signedFiles;
     }
 
     /**

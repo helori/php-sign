@@ -36,6 +36,13 @@ class Scenario
     protected $signatures;
 
     /**
+     * The URL used to send status changes requests
+     *
+     * @var string
+     */
+    protected $statusUrl;
+
+    /**
      * Create a new Sign instance.
      *
      * @return void
@@ -219,5 +226,26 @@ class Scenario
     {
         $this->signatures[] = $signature;
         return $signature;
+    }
+
+    /**
+     * Get the URL used to send status changes
+     *
+     * @return string
+     */
+    public function getStatusUrl()
+    {
+        return $this->statusUrl;
+    }
+
+    /**
+     * Set the URL used to send status changes
+     *
+     * @param  string  $statusUrl
+     * @return string
+     */
+    public function setStatusUrl($statusUrl)
+    {
+        return $this->statusUrl = $statusUrl;
     }
 }

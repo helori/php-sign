@@ -12,6 +12,7 @@ use Globalis\Universign\Requester;
 
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
+use Helori\PhpSign\Exceptions\SignException;
 use Helori\PhpSign\Exceptions\ValidationException;
 
 
@@ -113,13 +114,31 @@ class UniversignDriver implements DriverInterface
 
     	$request->setSigners($signers);
     	$request->setDescription($scenario->getTitle());
-    	$request->setHandwrittenSignatureMode(TransactionRequest::HANDWRITTEN_SIGNATURE_MODE_DIGITAL);
+
+        // The profile contains information to customize the web interface (logo...), 
+        // the push status URL to get notified of each signature step,
+        // and the signature field customization (size, text and image)
+        $request->setProfile('default');
+        // Cannot set $scenario->getStatusUrl() here !!!!
+
+
+        // local, certified, advanced, simple
+        $request->setCertificateType('simple'); 
+        $request->setChainingMode(TransactionRequest::CHAINING_MODE_WEB);
+        $request->setLanguage('fr');
+
+        $request->setHandwrittenSignatureMode(TransactionRequest::HANDWRITTEN_SIGNATURE_MODE_DIGITAL);
+        //$request->setCustomId();
+
+        // Send an email to the first signer
     	$request->setMustContactFirstSigner(false);
-    	$request->setFinalDocRequesterSent(true);
-    	$request->setChainingMode(TransactionRequest::CHAINING_MODE_WEB);
-    	$request->setProfile('default');
-    	$request->setCertificateType('simple');
-    	$request->setLanguage('fr');
+
+        // Tells whether each signer must receive the signed documents by e-mail when the transaction is completed. False by default.
+    	$request->setFinalDocSent(false);
+        // Tells whether the requester must receive the signed documents via e-mail when the transaction is completed. False by default.
+        $request->setFinalDocRequesterSent(false);
+        // Tells whether the observers must receive the signed documents via e-mail when the transaction is completed. It takes the finalDocSent value by default.
+        $request->setFinalDocObserverSent(false);
 
 		// Return a \Globalis\Universign\Response\TransactionResponse (with transaction url and id)
 		$transactionResponse = $this->requester->requestTransaction($request);
@@ -158,10 +177,10 @@ class UniversignDriver implements DriverInterface
 
             $signersInfos[] = $signersInfo;
         }
-
         $transaction->setSignersInfos($signersInfos);
         
         $transactionStatus = Transaction::STATUS_UNKNOWN;
+
         switch ($transactionInfo->status) {
 
         	case UniversignTransactionInfo::STATUS_READY:
@@ -202,7 +221,35 @@ class UniversignDriver implements DriverInterface
      */
     public function getDocuments(string $transactionId)
     {
-        // TODO
-        return [];
+        $files = [];
+
+        $transaction = $this->getTransaction($transactionId);
+
+        if ($transaction->getStatus() === Transaction::STATUS_COMPLETED) {
+
+            $docs = $this->requester->getDocuments($transactionId);
+
+            foreach ($docs as $doc) {
+
+                $files[] = [
+                    'name' => $doc->name,
+                    'content' => $doc->content,
+
+                    // Universign specific :
+                    'documentType' => $doc->documentType,
+                    'signatureFields' => $doc->signatureFields,
+                    'checkBoxTexts' => $doc->checkBoxTexts,
+                    'metaData' => $doc->metaData,
+                    'displayName' => $doc->displayName,
+                    'SEPAData' => $doc->SEPAData,
+                ];
+            }
+        
+        }else{
+
+            throw new SignException('Could not download signed files because they are not signed yet.');
+        }
+
+        return $files;
     }
 }

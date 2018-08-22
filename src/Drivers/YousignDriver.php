@@ -51,14 +51,14 @@ class YousignDriver implements DriverInterface
             'description' => '',
             'start' => false,
             //'ordered' => true,
-            /*'config' => [
+            'config' => [
                 'webhook' => [
                     'member.finished' => [
-                        'url' => 'https://algoart.fr',
-                        'method' => 'POST',
+                        'url' => $scenario->getStatusUrl(),
+                        'method' => 'GET',
                     ]
                 ]
-            ]*/
+            ],
         ]);
 
         // keep track of yousign generated ids : "php-sign document id" => "yousign file id"
@@ -128,7 +128,37 @@ class YousignDriver implements DriverInterface
 
         $transaction = new Transaction();
         $transaction->setId($transactionId);
-        $transaction->setStatus($procedure['status']);
+
+        $transactionStatus = Transaction::STATUS_UNKNOWN;
+
+        switch ($procedure['status']) {
+
+            case 'draft':
+                $transactionStatus = Transaction::STATUS_DRAFT;
+                break;
+
+            case 'active':
+                $transactionStatus = Transaction::STATUS_READY;
+                break;
+
+            case 'finished':
+                $transactionStatus = Transaction::STATUS_COMPLETED;
+                break;
+
+            case 'expired':
+                $transactionStatus = Transaction::STATUS_EXPIRED;
+                break;
+
+            case 'refused':
+                $transactionStatus = Transaction::STATUS_REFUSED;
+                break;
+
+            default:
+                $transactionStatus = Transaction::STATUS_UNKNOWN;
+                break;
+        }
+
+        $transaction->setStatus($transactionStatus);
 
         $signUrlBase = 'https://staging-app.yousign.com/procedure/sign?';
         $signersInfos = [];

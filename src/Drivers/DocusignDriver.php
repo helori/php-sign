@@ -15,6 +15,7 @@ use DocuSign\eSign\Model\Recipients;
 use DocuSign\eSign\Model\EnvelopeDefinition;
 use DocuSign\eSign\Api\EnvelopesApi\CreateEnvelopeOptions;
 use DocuSign\eSign\Model\RecipientViewRequest;
+use DocuSign\eSign\Model\EventNotification;
 
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
@@ -134,15 +135,20 @@ class DocusignDriver implements DriverInterface
 
     	foreach($scenario->getDocuments() as $scDocument){
 
+            // See possible values : https://developers.docusign.com/esign-rest-api/reference/Envelopes/Envelopes
     		$document = new Document();
             $document->setDocumentBase64(base64_encode(file_get_contents($scDocument->getFilepath())));
             $document->setName($scDocument->getName());
             $document->setDocumentId($scDocument->getId());
+            $document->setSignerMustAcknowledge('view_accept');
             $documents[] = $document;
     	}
 
     	$recipients = new Recipients();
         $recipients->setSigners($signers);
+
+        $eventNotification = new EventNotification();
+        $eventNotification->setUrl($scenario->getStatusUrl());
 
         // Create envelope and set envelope status to "sent" to immediately send the signature request
         $envelopeDefinition = new EnvelopeDefinition();
@@ -150,6 +156,7 @@ class DocusignDriver implements DriverInterface
         $envelopeDefinition->setStatus('sent'); 
         $envelopeDefinition->setRecipients($recipients);
         $envelopeDefinition->setDocuments($documents);
+        $envelopeDefinition->setEventNotification($eventNotification);
 
         $options = new CreateEnvelopeOptions();
         $options->setCdseMode(null);
@@ -177,7 +184,57 @@ class DocusignDriver implements DriverInterface
 
         $transaction = new Transaction();
         $transaction->setId($envelope->getEnvelopeId());
-        $transaction->setStatus($envelope->getStatus());
+
+        $transactionStatus = Transaction::STATUS_UNKNOWN;
+
+        switch ($envelope->getStatus()) {
+
+            case 'created':
+                $transactionStatus = Transaction::STATUS_DRAFT;
+                break;
+
+            case 'sent':
+                $transactionStatus = Transaction::STATUS_READY;
+                break;
+
+            case 'delivered':
+                $transactionStatus = Transaction::STATUS_READY;
+                break;
+
+            case 'processing':
+                $transactionStatus = Transaction::STATUS_READY;
+                break;
+
+            case 'signed':
+                $transactionStatus = Transaction::STATUS_COMPLETED;
+                break;
+
+            case 'completed':
+                $transactionStatus = Transaction::STATUS_COMPLETED;
+                break;
+
+            case 'declined':
+                $transactionStatus = Transaction::STATUS_REFUSED;
+                break;
+
+            case 'voided':
+                $transactionStatus = Transaction::STATUS_FAILED;
+                break;
+
+            case 'deleted':
+                $transactionStatus = Transaction::STATUS_CANCELED;
+                break;
+
+            case 'timedout':
+                $transactionStatus = Transaction::STATUS_EXPIRED;
+                break;
+            
+            default:
+                $transactionStatus = Transaction::STATUS_UNKNOWN;
+                break;
+        }
+
+        $transaction->setStatus($transactionStatus);
 
         $signersInfos = [];
 
@@ -223,7 +280,47 @@ class DocusignDriver implements DriverInterface
      */
     public function getDocuments(string $transactionId)
     {
-        // TODO
-        return [];
+        $files = [];
+
+        $envelopeApi = new EnvelopesApi($this->client);
+
+        $docsList = $envelopeApi->listDocuments($this->accountId, $transactionId);
+        $documents = $docsList->getEnvelopeDocuments();
+
+        foreach($documents as $document)
+        {
+            // The signature certificate is one of the returned documents
+            $isCertificate = (strpos($document->getDocumentId(), 'certificate') !== false);
+            if($isCertificate){
+                continue;
+            }
+
+            $content = $envelopeApi->getDocument($this->accountId, $transactionId, $document->getDocumentId());
+
+            $files[] = [
+                'name' => $document->getName(),
+                'content' => $content,
+
+                // Universign specific :
+                'attachment_tab_id' => $document->getAttachmentTabId(),
+                'available_document_types' => $document->getAvailableDocumentTypes(),
+                'contains_pdf_form_fields' => $document->getContainsPdfFormFields(),
+                'display' => $document->getDisplay(),
+                'document_fields' => $document->getDocumentFields(),
+                'document_group' => $document->getDocumentGroup(),
+                'document_id' => $document->getDocumentId(),
+                'error_details' => $document->getErrorDetails(),
+                'include_in_download' => $document->getIncludeInDownload(),
+                'order' => $document->getOrder(),
+                'pages' => $document->getPages(),
+                'signer_must_acknowledge' => $document->getSignerMustAcknowledge(),
+                'template_locked' => $document->getTemplateLocked(),
+                'template_required' => $document->getTemplateRequired(),
+                'type' => $document->getType(),
+                'uri' => $document->getUri(),
+            ];
+        }
+
+        return $files;
     }
 }
