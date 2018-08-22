@@ -24,8 +24,7 @@
     "require": {
         "php": ">=7.0.0",
         "docusign/esign-client": "^3.0",
-        "globalis/universign-service": "^0.1.6",
-        "yousign/yousign-api-client": "^2.0"
+        "globalis/universign-service": "^0.1.6"
     },
     "require-dev": {
         
