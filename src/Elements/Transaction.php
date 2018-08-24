@@ -91,6 +91,26 @@ class Transaction
     }
 
     /**
+     * Get the transaction status text
+     *
+     * @return string
+     */
+    public function getStatusText()
+    {
+        $texts = [
+            self::STATUS_DRAFT => "Draft",
+            self::STATUS_EXPIRED => "Expired",
+            self::STATUS_CANCELED => "Canceled",
+            self::STATUS_REFUSED => "Refused",
+            self::STATUS_FAILED => "Failed",
+            self::STATUS_COMPLETED => "Completed",
+            self::STATUS_UNKNOWN => "Unknown",
+        ];
+
+        return isset($texts[$this->status]) ? $texts[$this->status] : '';
+    }
+
+    /**
      * Set the transaction status
      *
      * @param  string  $name
