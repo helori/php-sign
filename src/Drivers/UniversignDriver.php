@@ -186,7 +186,7 @@ class UniversignDriver implements DriverInterface
                 'email' => $signerInfo->email,
                 'firstname' => $signerInfo->firstName,
                 'lastname' => $signerInfo->lastName,
-                'action_date' => Carbon::instance($signerInfo->actionDate),
+                'action_date' => $signerInfo->actionDate ? Carbon::instance($signerInfo->actionDate) : null,
                 //'error' => $signerInfo->error,
                 //'certificateInfo' => $signerInfo->certificateInfo,
                 //'refusedDocs' => $signerInfo->refusedDocs,
