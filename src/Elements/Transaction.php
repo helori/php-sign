@@ -163,4 +163,20 @@ class Transaction
     {
         return $this->data = $data;
     }
+
+    /**
+     * Convert the transaction to an associative array
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return [
+            'id' => $this->id,
+            'status' => $this->status,
+            'signersInfos' => $this->signersInfos,
+            'signedFiles' => $this->signedFiles,
+            'data' => $this->data,
+        ];
+    }
 }

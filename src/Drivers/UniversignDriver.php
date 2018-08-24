@@ -15,6 +15,8 @@ use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\SignException;
 use Helori\PhpSign\Exceptions\ValidationException;
 
+use Carbon\Carbon;
+
 
 class UniversignDriver implements DriverInterface
 {
@@ -24,6 +26,19 @@ class UniversignDriver implements DriverInterface
      * @var \Globalis\Universign\Requester
      */
     protected $requester;
+
+    /**
+     * The universign profile to use.
+     * Universign stores some information in containers called "profiles".
+     * Only the Universign team can modify it (no API nor UI for this).
+     * A profile contain :
+     * - Signature UI page customization elemnts such as logo...
+     * - Status push URL where GET requests are sent when a transaction status changed
+     * - Custom elements for the signatures blocks appearing where signers put their signatures on the documents
+     *
+     * @var string
+     */
+    protected $profile;
 
 	/**
      * Create a new UniversignDriver instance.
@@ -39,6 +54,7 @@ class UniversignDriver implements DriverInterface
 		);
 
 		$this->requester = new Requester($client);
+        $this->profile = $config['profile'];
     }
 
     /**
@@ -59,6 +75,7 @@ class UniversignDriver implements DriverInterface
 			    ->setLastname($scSigner->getLastname())
 			    ->setPhoneNum($scSigner->getPhone())
 			    ->setEmailAddress($scSigner->getEmail());
+                //->setBirthday($scSigner->getBirthday());  // ->format('Ymd\TH:i:s\Z')
 			    //->setSuccessURL('https://www.universign.eu/fr/sign/success/')
 			    //->setCancelURL('https://www.universign.eu/fr/sign/cancel/')
 			    //->setFailURL('https://www.universign.eu/fr/sign/failed/')
@@ -118,7 +135,7 @@ class UniversignDriver implements DriverInterface
         // The profile contains information to customize the web interface (logo...), 
         // the push status URL to get notified of each signature step,
         // and the signature field customization (size, text and image)
-        $request->setProfile('default');
+        $request->setProfile($this->profile);
         // Cannot set $scenario->getStatusUrl() here !!!!
 
 
@@ -169,9 +186,9 @@ class UniversignDriver implements DriverInterface
                 'email' => $signerInfo->email,
                 'firstname' => $signerInfo->firstName,
                 'lastname' => $signerInfo->lastName,
+                'action_date' => Carbon::instance($signerInfo->actionDate),
                 //'error' => $signerInfo->error,
                 //'certificateInfo' => $signerInfo->certificateInfo,
-                //'actionDate' => $signerInfo->actionDate,
                 //'refusedDocs' => $signerInfo->refusedDocs,
             ];
 

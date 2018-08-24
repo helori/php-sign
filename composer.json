@@ -1,7 +1,7 @@
 {
     "name": "helori/php-sign",
     "description": "A framework agnostic PHP library to sign PDF documents",
-    "keywords": ["php", "sign", "signature", "docusign", "universign", "yousign"],
+    "keywords": ["php", "pdf", "document", "file", "sign", "signature", "docusign", "universign", "yousign"],
     "license": "MIT",
     "authors": [
         {
@@ -23,6 +23,7 @@
     },
     "require": {
         "php": ">=7.0.0",
+        "nesbot/carbon": "1.25.*",
         "docusign/esign-client": "^3.0",
         "globalis/universign-service": "^0.1.6"
     },
