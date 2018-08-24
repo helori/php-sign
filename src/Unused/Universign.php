@@ -1,34 +1,11 @@
 <?php
 
-// Non ! sinon les classes xmlrpc ne sont pas trouvées!
-namespace App\Utilities;
-
 use PhpXmlRpc;
 
 $GLOBALS['xmlrpc_internalencoding'] = 'UTF-8';
 
 class Universign
 {
-    // COMPTE DE TEST :  
-    // https://sign.test.universign.eu/
-    // Email : helori.lanos@francescpi.com
-    // Password : Melanie
-    // Name : Helori LANOS
-    // Company : France SCPI
-    // Ancienne URL : https://sign.test.universign.eu/sign/rpc/
-
-    // COMPTE DE PRODUCTION :  
-    // https://ws.universign.eu/sign/rpc
-    // Email : helori.lanos@francescpi.com
-    // Password : Tgsv5lA8
-    // Name : Helori LANOS
-    // Company : France SCPI
-
-    // SUPPRIMER UNE IDENTITE :
-    // http://sign.test.universign.eu:8080/reset/
-    // login : francescpi
-    // password : Eiph7Tha
-    
     protected $uni_url = '';
     protected $uni_username = '';
     protected $uni_password = '';
@@ -40,14 +17,14 @@ class Universign
         if(env('APP_ENV') === 'production'){
 
             $this->uni_url = 'https://ws.universign.eu/sign/rpc/';
-            $this->uni_username = 'helori.lanos@francescpi.com';
-            $this->uni_password = 'Tgsv5lA8';
+            $this->uni_username = '';
+            $this->uni_password = '';
         
         }else{
 
             $this->uni_url = 'https://sign.test.cryptolog.com/sign/rpc/';
-            $this->uni_username = 'helori.lanos@francescpi.com';
-            $this->uni_password = 'Melanie';
+            $this->uni_username = '';
+            $this->uni_password = '';
         }
     }
 
