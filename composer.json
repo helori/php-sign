@@ -23,7 +23,7 @@
     },
     "require": {
         "php": ">=7.0.0",
-        "nesbot/carbon": "1.25.*",
+        "nesbot/carbon": "*",
         "docusign/esign-client": "^3.0",
         "globalis/universign-service": "^0.1.6"
     },
