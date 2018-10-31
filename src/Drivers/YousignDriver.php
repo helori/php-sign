@@ -7,33 +7,34 @@ use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\DriverAuthException;
 use Helori\PhpSign\Exceptions\ValidationException;
+use Helori\PhpSign\Exceptions\SignException;
 
 
 class YousignDriver implements DriverInterface
 {
-	/**
+    /**
      * The Yousign API Requester
      *
      * @var \Helori\PhpSign\Utilities\RestApiRequester
      */
     protected $requester;
 
-	/**
+    /**
      * Create a new YousignDriver instance.
      *
      * @return void
      */
     public function __construct(array $config)
     {
-    	$requiredConfigKeys = ['api_key', 'endpoint'];
+        $requiredConfigKeys = ['api_key', 'endpoint'];
 
-    	foreach($requiredConfigKeys as $key){
+        foreach($requiredConfigKeys as $key){
 
-    		if(!isset($config[$key]) || $config[$key] === ''){
+            if(!isset($config[$key]) || $config[$key] === ''){
 
-	    		throw new ValidationException('Yousign config parameter "'.$key.'" must be set');
-	    	}
-    	}
+                throw new ValidationException('Yousign config parameter "'.$key.'" must be set');
+            }
+        }
 
         $this->requester = new RestApiRequester($config['api_key'], $config['endpoint']);
     }
@@ -60,6 +61,10 @@ class YousignDriver implements DriverInterface
                 ]
             ],
         ]);
+
+        if(isset($procedure['error'])){
+            throw new SignException('Yousign error : '.$procedure['error']);
+        }
 
         // keep track of yousign generated ids : "php-sign document id" => "yousign file id"
         $fileIds = [];
