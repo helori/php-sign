@@ -70,16 +70,21 @@ class UniversignDriver implements DriverInterface
 
     	foreach($scenario->getSigners() as $scSigner){
 
-    		$signer = new TransactionSigner();
-			$signer->setFirstname($scSigner->getFirstname())
-			    ->setLastname($scSigner->getLastname())
-			    ->setPhoneNum($scSigner->getPhone())
-			    ->setEmailAddress($scSigner->getEmail());
+            $signer = new TransactionSigner();
+            $signer->setFirstname($scSigner->getFirstname())
+                ->setLastname($scSigner->getLastname())
+                ->setEmailAddress($scSigner->getEmail());
                 //->setBirthday($scSigner->getBirthday());  // ->format('Ymd\TH:i:s\Z')
-			    //->setSuccessURL('https://www.universign.eu/fr/sign/success/')
-			    //->setCancelURL('https://www.universign.eu/fr/sign/cancel/')
-			    //->setFailURL('https://www.universign.eu/fr/sign/failed/')
-			    //->setProfile('profil_vendeur');
+                //->setSuccessURL('https://www.universign.eu/fr/sign/success/')
+                //->setCancelURL('https://www.universign.eu/fr/sign/cancel/')
+                //->setFailURL('https://www.universign.eu/fr/sign/failed/')
+                //->setProfile('profil_vendeur');
+
+            // If phone is not set, it will be asked at signature time
+            if($scSigner->getPhone()){
+                $signer->setPhoneNum($scSigner->getPhone());
+            }
+            
 			$signers[] = $signer;
     	}
 
