@@ -99,6 +99,7 @@ class Transaction
     {
         $texts = [
             self::STATUS_DRAFT => "Draft",
+            self::STATUS_READY => "Waiting",
             self::STATUS_EXPIRED => "Expired",
             self::STATUS_CANCELED => "Canceled",
             self::STATUS_REFUSED => "Refused",
