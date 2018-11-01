@@ -2,18 +2,12 @@
 
 namespace Helori\PhpSign\Drivers;
 
-use Globalis\Universign\Request\TransactionSigner;
-use Globalis\Universign\Request\DocSignatureField;
-use Globalis\Universign\Request\TransactionDocument;
-use Globalis\Universign\Request\TransactionRequest;
-use Globalis\Universign\Response\TransactionResponse;
-use Globalis\Universign\Response\TransactionInfo as UniversignTransactionInfo;
-use Globalis\Universign\Requester;
-
+use Helori\PhpSign\Utilities\XmlRpcRequester;
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\SignException;
 use Helori\PhpSign\Exceptions\ValidationException;
+use PhpXmlRpc\Value;
 
 use Carbon\Carbon;
 
@@ -21,9 +15,9 @@ use Carbon\Carbon;
 class UniversignDriver implements DriverInterface
 {
 	/**
-     * The universign requester
+     * The Universign API Requester
      *
-     * @var \Globalis\Universign\Requester
+     * @var \Helori\PhpSign\Utilities\XmlRpcRequester
      */
     protected $requester;
 
@@ -47,13 +41,17 @@ class UniversignDriver implements DriverInterface
      */
     public function __construct(array $config)
     {
-		$client = new \PhpXmlRpc\Client($config['endpoint']);
-		$client->setCredentials(
-		    $config['username'],
-		    $config['password']
-		);
+		$requiredConfigKeys = ['username', 'password', 'endpoint'];
 
-		$this->requester = new Requester($client);
+        foreach($requiredConfigKeys as $key){
+
+            if(!isset($config[$key]) || $config[$key] === ''){
+
+                throw new ValidationException('Universign config parameter "'.$key.'" must be set');
+            }
+        }
+
+        $this->requester = new XmlRpcRequester($config['username'], $config['password'], $config['endpoint']);
         $this->profile = $config['profile'];
     }
 
@@ -70,28 +68,24 @@ class UniversignDriver implements DriverInterface
 
     	foreach($scenario->getSigners() as $scSigner){
 
-            $signer = new TransactionSigner();
-            $signer->setFirstname($scSigner->getFirstname())
-                ->setLastname($scSigner->getLastname())
-                ->setEmailAddress($scSigner->getEmail());
-                //->setBirthday($scSigner->getBirthday());  // ->format('Ymd\TH:i:s\Z')
-                //->setSuccessURL('https://www.universign.eu/fr/sign/success/')
-                //->setCancelURL('https://www.universign.eu/fr/sign/cancel/')
-                //->setFailURL('https://www.universign.eu/fr/sign/failed/')
-                //->setProfile('profil_vendeur');
+            $signer = [
+                "firstname" => new Value($scSigner->getFirstname(), "string"),
+                "lastname" => new Value($scSigner->getLastname(), "string"),
+                "emailAddress" => new Value($scSigner->getEmail(), "string"),
+                //"successURL" =>  new Value($returnPage."success", "string"),
+                //"failURL" =>  new Value($returnPage."fail", "string"),
+                //"cancelURL" =>  new Value($returnPage."cancel", "string"),
+            ];
 
             // If phone is not set, it will be asked at signature time
             if($scSigner->getPhone()){
-                $signer->setPhoneNum($scSigner->getPhone());
+                $signer['phoneNum'] = new Value($scSigner->getPhone(), "string");
             }
-            
-			$signers[] = $signer;
+
+            $signers[] = new Value($signer, "struct");
     	}
 
     	foreach($scenario->getDocuments() as $scDocument){
-
-    		$document = new TransactionDocument();
-			$document->setPath($scDocument->getFilepath());
 
 			$signatures = [];
 
@@ -99,73 +93,78 @@ class UniversignDriver implements DriverInterface
 
 				if($scSignature->getDocumentId() === $scDocument->getId()){
 
-					$signature = new DocSignatureField();
-
-					$signature->setPage($scSignature->getPage())
-					    ->setX($scSignature->getX())
-					    ->setY($scSignature->getY())
-					    //->setPatternName('default')
-					    ->setLabel($scSignature->getLabel());
+                    $signature = [
+                        "page" => new Value($scSignature->getPage(), "int"),
+                        "x" => new Value($scSignature->getX(), "int"),
+                        "y" => new Value($scSignature->getY(), "int"),
+                        "label" => new Value($scSignature->getLabel(), "string"),
+                        "signerIndex" => null,
+                    ];
 
 					$signerIndex = null;
 					foreach($scenario->getSigners() as $index => $scSigner){
 						if($scSigner->getId() === $scSignature->getSignerId()){
-							$signerIndex = $index;
+							$signature['signerIndex'] = new Value($index, "int");
 						}
 					}
-					if(is_null($signerIndex)){
+					if(is_null($signature['signerIndex'])){
 
 						throw new ValidationException('The signature\'s signerId "'.$scSignature->getSignerId().'" has no corresponding signer');
 					}
 
-					$signature->setSignerIndex($signerIndex);
-
-					$signatures[] = $signature;
+					$signatures[] = new Value($signature, "struct");
 				}
 			}
 
-			$document->setSignatureFields($signatures);
-			$documents[] = $document;
+            $document = [
+                "content" => new Value(file_get_contents($scDocument->getFilepath()), "base64"),
+                "name" => new Value($scDocument->getName(), "string"),
+                "signatureFields" => new Value($signatures, "array")
+            ];
+
+            $documents[] = new Value($document, "struct");
     	}
 
-    	$request = new TransactionRequest();
+        $request = [
+            // the profile to use
+            "profile" => new Value($this->profile, "string"),
+            "signers" => new Value($signers, "array"),
+            "documents" => new Value($documents, "array"),
+            "description" => new Value($scenario->getTitle(), "string"),
+            // Possible types : certified, advanced, simple
+            "certificateType" => new Value("simple", "string"),
+            // The interface language for this transaction
+            "language" => new Value("en", "string"),
+            // handwritten signature : 
+            // 0: disabled
+            // 1: enabled
+            // 2: enabled if touch interface
+            "handwrittenSignatureMode" => new Value(2, "int"),
+            // This option indicates how the signers are chained during the signing process.
+            // none: must contact physically, email: all signers receive email invitations, web: all signers are present
+            "chainingMode" => new Value('email', "string"),
 
-    	foreach($documents as $document){
-    		$request->addDocument($document);
-    	}
 
-    	$request->setSigners($signers);
-    	$request->setDescription($scenario->getTitle());
+            // If set to True, the first signer will receive an invitation to sign the document(s) by e-mail
+            // as soon as the transaction is requested. False by default.
+            "mustContactFirstSigner" => new Value(false, "boolean"),
+            // Tells whether each signer must receive the signed documents by email
+            // when the transaction is completed. False by default :
+            "finalDocSent" => new Value(false, "boolean"),
+            // Tells whether the requester must receive the signed documents via e-mail
+            // when the transaction is completed. False by default.
+            "finalDocRequesterSent" =>  new Value(false, "boolean"),
+            // Tells whether the observers must receive the signed documents via e-mail
+            // when the transaction is completed. It takes the finalDocSent value by default.
+            "finalDocObserverSent" =>  new Value(false, "boolean"),
+        ];
 
-        // The profile contains information to customize the web interface (logo...), 
-        // the push status URL to get notified of each signature step,
-        // and the signature field customization (size, text and image)
-        $request->setProfile($this->profile);
-        // Cannot set $scenario->getStatusUrl() here !!!!
+        $response = $this->requester->sendRequest('requester.requestTransaction', [
+            new Value($request, "struct")
+        ]);
 
-
-        // local, certified, advanced, simple
-        $request->setCertificateType('simple'); 
-        $request->setChainingMode(TransactionRequest::CHAINING_MODE_WEB);
-        $request->setLanguage('fr');
-
-        $request->setHandwrittenSignatureMode(TransactionRequest::HANDWRITTEN_SIGNATURE_MODE_DIGITAL);
-        //$request->setCustomId();
-
-        // Send an email to the first signer
-    	$request->setMustContactFirstSigner(false);
-
-        // Tells whether each signer must receive the signed documents by e-mail when the transaction is completed. False by default.
-    	$request->setFinalDocSent(false);
-        // Tells whether the requester must receive the signed documents via e-mail when the transaction is completed. False by default.
-        $request->setFinalDocRequesterSent(false);
-        // Tells whether the observers must receive the signed documents via e-mail when the transaction is completed. It takes the finalDocSent value by default.
-        $request->setFinalDocObserverSent(false);
-
-		// Return a \Globalis\Universign\Response\TransactionResponse (with transaction url and id)
-		$transactionResponse = $this->requester->requestTransaction($request);
-
-		return $this->getTransaction($transactionResponse->id);
+        $transactionId = $response->structMem('id')->scalarVal();
+        return $this->getTransaction($transactionId);
     }
 
     /**
@@ -176,52 +175,48 @@ class UniversignDriver implements DriverInterface
      */
     public function getTransaction(string $transactionId)
     {
-        $transaction = new Transaction();
-        $transaction->setId($transactionId);
-
-        $transactionInfo = $this->requester->getTransactionInfo($transactionId);
+        $response = $this->requester->sendRequest('requester.getTransactionInfo', [
+            new Value($transactionId, "string")
+        ]);
 
         $signersInfos = [];
 
-        foreach($transactionInfo->signerInfos as $signerInfo){
+        foreach($response->structMem('signerInfos')->scalarVal() as $signerInfo){
 
-            $signersInfo = [
-                'status' => $signerInfo->status,
-                'url' => $signerInfo->url,
-                'email' => $signerInfo->email,
-                'firstname' => $signerInfo->firstName,
-                'lastname' => $signerInfo->lastName,
-                'action_date' => $signerInfo->actionDate ? Carbon::instance($signerInfo->actionDate) : null,
-                //'error' => $signerInfo->error,
+            $signersInfos[] = [
+                'status' => $signerInfo->structMem('status')->scalarVal(),
+                'url' => $signerInfo->structMem('url')->scalarVal(),
+                'email' => $signerInfo->structMem('email')->scalarVal(),
+                'firstname' => $signerInfo->structMem('firstName')->scalarVal(),
+                'lastname' => $signerInfo->structMem('lastName')->scalarVal(),
+                'action_date' => $signerInfo['actionDate'] ? $signerInfo->structMem('actionDate')->scalarVal() : '',
+                //'error' => $signerInfo->structMem('error')->scalarVal(),
                 //'certificateInfo' => $signerInfo->certificateInfo,
                 //'refusedDocs' => $signerInfo->refusedDocs,
             ];
-
-            $signersInfos[] = $signersInfo;
         }
-        $transaction->setSignersInfos($signersInfos);
         
         $transactionStatus = Transaction::STATUS_UNKNOWN;
 
-        switch ($transactionInfo->status) {
+        switch ($response->structMem('status')->scalarVal()) {
 
-        	case UniversignTransactionInfo::STATUS_READY:
+        	case 'ready':
         		$transactionStatus = Transaction::STATUS_READY;
         		break;
 
-        	case UniversignTransactionInfo::STATUS_EXPIRED:
+        	case 'expired':
         		$transactionStatus = Transaction::STATUS_EXPIRED;
         		break;
 
-        	case UniversignTransactionInfo::STATUS_CANCELED:
+        	case 'canceled':
         		$transactionStatus = Transaction::STATUS_CANCELED;
         		break;
 
-        	case UniversignTransactionInfo::STATUS_FAILED:
+        	case 'failed':
         		$transactionStatus = Transaction::STATUS_FAILED;
         		break;
 
-        	case UniversignTransactionInfo::STATUS_COMPLETED:
+        	case 'completed':
         		$transactionStatus = Transaction::STATUS_COMPLETED;
         		break;
         	
@@ -230,6 +225,9 @@ class UniversignDriver implements DriverInterface
         		break;
         }
 
+        $transaction = new Transaction();
+        $transaction->setId($transactionId);
+        $transaction->setSignersInfos($signersInfos);
         $transaction->setStatus($transactionStatus);
 
         return $transaction;
@@ -244,26 +242,19 @@ class UniversignDriver implements DriverInterface
     public function getDocuments(string $transactionId)
     {
         $files = [];
-
         $transaction = $this->getTransaction($transactionId);
 
-        if ($transaction->getStatus() === Transaction::STATUS_COMPLETED) {
+        if($transaction->getStatus() === Transaction::STATUS_COMPLETED) {
 
-            $docs = $this->requester->getDocuments($transactionId);
+            $response = $this->requester->sendRequest('requester.getDocuments', [
+                new Value($transactionId, "string")
+            ]);
 
-            foreach ($docs as $doc) {
-
+            for($i = 0; $i < $response->arraySize(); $i++)
+            {
                 $files[] = [
-                    'name' => $doc->name,
-                    'content' => $doc->content,
-
-                    // Universign specific :
-                    'documentType' => $doc->documentType,
-                    'signatureFields' => $doc->signatureFields,
-                    'checkBoxTexts' => $doc->checkBoxTexts,
-                    'metaData' => $doc->metaData,
-                    'displayName' => $doc->displayName,
-                    'SEPAData' => $doc->SEPAData,
+                    'name' => $response->arrayMem($i)->structMem('name')->scalarVal(),
+                    'content' => $response->arrayMem($i)->structMem('content')->scalarVal(),
                 ];
             }
         
