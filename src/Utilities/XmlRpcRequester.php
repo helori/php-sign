@@ -2,18 +2,16 @@
 
 namespace Helori\PhpSign\Utilities;
 
+use PhpXmlRpc\PhpXmlRpc;
 use PhpXmlRpc\Client;
 use PhpXmlRpc\Request;
 use PhpXmlRpc\Value;
 use Exception;
 
 
-$GLOBALS['xmlrpc_internalencoding'] = 'UTF-8';
-
-
 class XmlRpcRequester
 {
-	/**
+    /**
      * The API endpoint
      *
      * @var string
@@ -34,7 +32,7 @@ class XmlRpcRequester
      */
     protected $password;
 
-	/**
+    /**
      * Initialize a XmlRpcRequester
      *
      * @param  string  $username
@@ -42,14 +40,17 @@ class XmlRpcRequester
      * @param  string  $endpoint
      * @return array
      */
-	public function __construct(string $username = '', string $password = '', string $endpoint = '')
-	{
-		$this->username = $username;
-		$this->password = $password;
-        $this->endpoint = $endpoint;
-	}
+    public function __construct(string $username = '', string $password = '', string $endpoint = '')
+    {
+        $GLOBALS['xmlrpc_internalencoding'] = 'UTF-8';
+        PhpXmlRpc::importGlobals();
 
-	/**
+        $this->username = $username;
+        $this->password = $password;
+        $this->endpoint = $endpoint;
+    }
+
+    /**
      * Get the username
      *
      * @return string
