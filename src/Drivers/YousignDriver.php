@@ -47,21 +47,24 @@ class YousignDriver implements DriverInterface
      */
     public function createTransaction(Scenario $scenario)
     {
-        $result = $this->requester->post('/procedures', [
+        $data = [
             'name' => $scenario->getTitle(),
             //'description' => '',
             'start' => false,
             //'ordered' => true,
-            /*'config' => [
-                'webhook' => [
-                    'member.finished' => [
-                        'url' => $scenario->getStatusUrl(),
-                        'method' => 'GET',
-                    ]
-                ]
-            ],*/
-        ]);
+            'config' => [],
+        ];
 
+        if($scenario->getStatusUrl()){
+            $data['config']['webhook'] = [
+                'procedure.*' => [
+                    'url' => $scenario->getStatusUrl(),
+                    'method' => 'POST',
+                ]
+            ];
+        }
+
+        $result = $this->requester->post('/procedures', $data);
         $procedure = $this->checkedApiResult($result);
 
         // keep track of yousign generated ids : "php-sign document id" => "yousign file id"
