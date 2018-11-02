@@ -47,24 +47,22 @@ class YousignDriver implements DriverInterface
      */
     public function createTransaction(Scenario $scenario)
     {
-        $procedure = $this->requester->post('/procedures', [
+        $result = $this->requester->post('/procedures', [
             'name' => $scenario->getTitle(),
-            'description' => '',
+            //'description' => '',
             'start' => false,
             //'ordered' => true,
-            'config' => [
+            /*'config' => [
                 'webhook' => [
                     'member.finished' => [
                         'url' => $scenario->getStatusUrl(),
                         'method' => 'GET',
                     ]
                 ]
-            ],
+            ],*/
         ]);
 
-        if(isset($procedure['error'])){
-            throw new SignException('Yousign error : '.$procedure['error']);
-        }
+        $procedure = $this->checkedApiResult($result);
 
         // keep track of yousign generated ids : "php-sign document id" => "yousign file id"
         $fileIds = [];
@@ -74,18 +72,20 @@ class YousignDriver implements DriverInterface
 
         foreach($scenario->getDocuments() as $scDocument){
 
-            $file = $this->requester->post('/files', [
+            $result = $this->requester->post('/files', [
                 'name' => $scDocument->getName(),
                 'content' => base64_encode(file_get_contents($scDocument->getFilePath())),
                 'procedure' => $procedure['id'],
             ]);
+
+            $file = $this->checkedApiResult($result);
 
             $fileIds[$scDocument->getId()] = $file['id'];
         }
 
         foreach($scenario->getSigners() as $scSigner){
 
-            $member = $this->requester->post('/members', [
+            $result = $this->requester->post('/members', [
                 //'position' => $scSigner->getId(),
                 'firstname' => $scSigner->getFirstname(),
                 'lastname' => $scSigner->getLastname(),
@@ -93,6 +93,8 @@ class YousignDriver implements DriverInterface
                 'phone' => $scSigner->getPhone(),
                 'procedure' => $procedure['id'],
             ]);
+
+            $member = $this->checkedApiResult($result);
 
             $memberIds[$scSigner->getId()] = $member['id'];
         }
@@ -114,9 +116,11 @@ class YousignDriver implements DriverInterface
             ]);
         }
 
-        $procedure = $this->requester->put($procedure['id'], [
+        $result = $this->requester->put($procedure['id'], [
             'start' => true,
         ]);
+
+        $procedure = $this->checkedApiResult($result);
 
         return $this->getTransaction($procedure['id']);
     }
@@ -129,7 +133,8 @@ class YousignDriver implements DriverInterface
      */
     public function getTransaction(string $transactionId)
     {
-        $procedure = $this->requester->get($transactionId);
+        $result = $this->requester->get($transactionId);
+        $procedure = $this->checkedApiResult($result);
 
         $transaction = new Transaction();
         $transaction->setId($transactionId);
@@ -197,5 +202,30 @@ class YousignDriver implements DriverInterface
     {
         // TODO
         return [];
+    }
+
+    /**
+     * Format Yousign API exceptions
+     *
+     * @param  object  $apiResult
+     * @return mixed
+     */
+    public function checkedApiResult($apiResult)
+    {
+        $data = json_decode($apiResult->getBody()->getContents(), true);
+
+        if($apiResult->getStatusCode() >= 400){
+
+            $message = $apiResult->getReasonPhrase();
+            
+            if(isset($data['detail'])){
+                $message = $data['detail'];
+            }else if(isset($data['error'])){
+                $message = $data['error'];
+            }
+            throw new \Exception($message, $apiResult->getStatusCode());
+        }
+
+        return $data;
     }
 }

@@ -145,6 +145,7 @@ class RestApiRequester
             rtrim($this->endpoint, '/').$url,
             [
 	            'headers' => [
+                    'Content-Type' => 'application/json',
 	                'Accept' => 'application/json',
 	                'Authorization' => 'Bearer '.$this->apiKey,
 	            ],
@@ -154,8 +155,6 @@ class RestApiRequester
 	        ]
         );
 
-        $response = json_decode($result->getBody()->getContents(), true);
-
-        return $response;
+        return $result;
     }
 }
