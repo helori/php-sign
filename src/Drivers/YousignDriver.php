@@ -56,11 +56,30 @@ class YousignDriver implements DriverInterface
         ];
 
         if($scenario->getStatusUrl()){
-            $data['config']['webhook'] = [
-                'procedure.*' => [
+
+            $webhookParams = [
+                [
                     'url' => $scenario->getStatusUrl(),
                     'method' => 'GET',
                 ]
+                // Other webhooks can be added here...
+            ];
+
+            $data['config']['webhook'] = [
+                // Fired when a procedure is created (POST /procedures)
+                'procedure.started' => $webhookParams,
+                // Fired when a procedure is finished (all members have signed)
+                'procedure.finished' => $webhookParams,
+                // Fired when a procedure is refused (a member have refused)
+                'procedure.refused' => $webhookParams,
+                // Fired when a procedure expired (The expiresAt date is reached)
+                'procedure.expired' => $webhookParams,
+                // Fired when a member can sign
+                'member.started' => $webhookParams,
+                // Fired when a member have signed
+                'member.finished' => $webhookParams,
+                // Fired when someone comment a procedure
+                //'comment.created' => $webhookParams,
             ];
         }
 
@@ -203,8 +222,31 @@ class YousignDriver implements DriverInterface
      */
     public function getDocuments(string $transactionId)
     {
-        // TODO
-        return [];
+        $files = [];
+        $transaction = $this->getTransaction($transactionId);
+
+        if($transaction->getStatus() === Transaction::STATUS_COMPLETED) {
+
+            $result = $this->requester->get($transactionId);
+            $procedure = $this->checkedApiResult($result);
+
+            foreach($procedure['files'] as $procedureFile)
+            {
+                $fileResult = $this->requester->get($procedureFile['id'].'/download');
+                $fileContent = $this->checkedApiResult($fileResult);
+
+                $files[] = [
+                    'name' => $procedureFile['name'],
+                    'content' => $fileContent,
+                ];
+            }
+        
+        }else{
+
+            throw new SignException('Could not download signed files because they are not signed yet.');
+        }
+
+        return $files;
     }
 
     /**
