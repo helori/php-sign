@@ -59,7 +59,7 @@ class YousignDriver implements DriverInterface
             $data['config']['webhook'] = [
                 'procedure.*' => [
                     'url' => $scenario->getStatusUrl(),
-                    'method' => 'POST',
+                    'method' => 'GET',
                 ]
             ];
         }
