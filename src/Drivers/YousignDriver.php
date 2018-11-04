@@ -233,7 +233,7 @@ class YousignDriver implements DriverInterface
             foreach($procedure['files'] as $procedureFile)
             {
                 $fileResult = $this->requester->get($procedureFile['id'].'/download');
-                $fileContent = $this->checkedApiResult($fileResult);
+                $fileContent = base64_decode($this->checkedApiResult($fileResult));
 
                 $files[] = [
                     'name' => $procedureFile['name'],
