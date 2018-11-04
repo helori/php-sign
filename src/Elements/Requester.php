@@ -37,6 +37,16 @@ class Requester
     }
 
     /**
+     * Get the driver
+     *
+     * @return \Helori\PhpSign\Drivers\DriverInterface
+     */
+    public function getDriver()
+    {
+        return $this->driver;
+    }
+
+    /**
      * Create a transaction from a scenario
      *
      * @param  Scenario  $scenario

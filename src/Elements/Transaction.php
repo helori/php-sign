@@ -43,9 +43,16 @@ class Transaction
     protected $signedFiles;
 
     /**
+     * The driver used for the transaction
+     *
+     * @var string
+     */
+    protected $driver;
+
+    /**
      * The transaction original data (from the driver)
      *
-     * @var data
+     * @var array
      */
     protected $data;
 
@@ -54,9 +61,9 @@ class Transaction
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(string $driver)
     {
-        
+        $this->setDriver($driver);
     }
 
     /**
@@ -186,6 +193,27 @@ class Transaction
     }
 
     /**
+     * Get the driver used for the transaction
+     *
+     * @return string
+     */
+    public function getDriver()
+    {
+        return $this->driver;
+    }
+
+    /**
+     * Set the driver used for the transaction
+     *
+     * @param  string  $driver
+     * @return string
+     */
+    public function setDriver(string $driver)
+    {
+        return $this->driver = $driver;
+    }
+
+    /**
      * Convert the transaction to an associative array
      *
      * @return array
@@ -197,6 +225,7 @@ class Transaction
             'status' => $this->status,
             'signersInfos' => $this->signersInfos,
             'signedFiles' => $this->signedFiles,
+            'driver' => $this->driver,
             'data' => $this->data,
         ];
     }

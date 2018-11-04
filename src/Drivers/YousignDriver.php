@@ -40,6 +40,16 @@ class YousignDriver implements DriverInterface
     }
 
     /**
+     * Get the driver's name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'yousign';
+    }
+
+    /**
      * Create a transaction from a scenario
      *
      * @param  \Helori\PhpSign\Elements\Scenario  $scenario
@@ -158,7 +168,7 @@ class YousignDriver implements DriverInterface
         $result = $this->requester->get($transactionId);
         $procedure = $this->checkedApiResult($result);
 
-        $transaction = new Transaction();
+        $transaction = new Transaction($this->getName());
         $transaction->setId($transactionId);
 
         $transactionStatus = Transaction::STATUS_UNKNOWN;

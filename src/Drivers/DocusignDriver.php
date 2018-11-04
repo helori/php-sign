@@ -81,6 +81,16 @@ class DocusignDriver implements DriverInterface
     }
 
     /**
+     * Get the driver's name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'docusign';
+    }
+
+    /**
      * Create a transaction from a scenario
      *
      * @param  \Helori\PhpSign\Elements\Scenario  $scenario
@@ -182,7 +192,7 @@ class DocusignDriver implements DriverInterface
         $envelope = $envelopeApi->getEnvelope($this->accountId, $transactionId);
         $recipients = $envelopeApi->listRecipients($this->accountId, $transactionId);
 
-        $transaction = new Transaction();
+        $transaction = new Transaction($this->getName());
         $transaction->setId($envelope->getEnvelopeId());
 
         $transactionStatus = Transaction::STATUS_UNKNOWN;

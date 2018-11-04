@@ -56,6 +56,16 @@ class UniversignDriver implements DriverInterface
     }
 
     /**
+     * Get the driver's name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return 'universign';
+    }
+
+    /**
      * Create a transaction from a scenario
      *
      * @param  \Helori\PhpSign\Elements\Scenario  $scenario
@@ -225,7 +235,7 @@ class UniversignDriver implements DriverInterface
         		break;
         }
 
-        $transaction = new Transaction();
+        $transaction = new Transaction($this->getName());
         $transaction->setId($transactionId);
         $transaction->setSignersInfos($signersInfos);
         $transaction->setStatus($transactionStatus);

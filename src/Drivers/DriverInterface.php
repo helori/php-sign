@@ -8,6 +8,13 @@ use Helori\PhpSign\Elements\Scenario;
 interface DriverInterface
 {
 	/**
+     * Get the driver's name
+     *
+     * @return string
+     */
+    public function getName();
+
+    /**
      * Create a transaction from a scenario
      *
      * @param  Helori\PhpSign\Elements\Scenario  $scenario
