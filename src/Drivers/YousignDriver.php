@@ -148,6 +148,30 @@ class YousignDriver implements DriverInterface
             ]);
         }
 
+        $result = $this->requester->post('/signature_uis', [
+            'languages' => $scenario->getAllowedLanguages(),
+            'defaultLanguage' => $scenario->getLang(),
+            'redirectCancel' => [
+                'url' => $scenario->getCancelUrl(),
+                'target' => '_self', // "_top or _blank or _self or _parent
+                'auto' => false,
+            ],
+            'redirectError' => [
+                'url' => $scenario->getErrorUrl(),
+                'target' => '_self',
+                'auto' => false,
+            ],
+            'redirectSuccess' => [
+                'url' => $scenario->getSuccessUrl(),
+                'target' => '_self',
+                'auto' => false,
+            ],
+
+            // TODO : more customization options... 
+            // https://dev.yousign.com/
+        ]);
+        $signatureUI = $this->checkedApiResult($result);
+
         $result = $this->requester->put($procedure['id'], [
             'start' => true,
         ]);

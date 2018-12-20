@@ -35,20 +35,6 @@ class UniversignDriver implements DriverInterface
     protected $profile;
 
     /**
-     * The language used on the Universign page
-     *
-     * @var string
-     */
-    protected $lang = 'fr';
-
-    /**
-     * Allowed languages
-     *
-     * @var array
-     */
-    protected $allowedLanguages = ['en', 'fr'];
-
-    /**
      * Create a new UniversignDriver instance.
      *
      * @return void
@@ -67,15 +53,6 @@ class UniversignDriver implements DriverInterface
 
         $this->requester = new XmlRpcRequester($config['username'], $config['password'], $config['endpoint']);
         $this->profile = $config['profile'];
-
-        if(isset($config['lang'])){
-            if(!in_array($config['lang'], $this->allowedLanguages)){
-
-                throw new ValidationException('Universign config parameter "'.$key.'" must be one of '.implode(', ', $this->allowedLanguages));
-            }else{
-                $this->lang = $config['lang'];
-            }
-        }
     }
 
     /**
@@ -105,9 +82,9 @@ class UniversignDriver implements DriverInterface
                 "firstname" => new Value($scSigner->getFirstname(), "string"),
                 "lastname" => new Value($scSigner->getLastname(), "string"),
                 "emailAddress" => new Value($scSigner->getEmail(), "string"),
-                //"successURL" =>  new Value($returnPage."success", "string"),
-                //"failURL" =>  new Value($returnPage."fail", "string"),
-                //"cancelURL" =>  new Value($returnPage."cancel", "string"),
+                "successURL" =>  new Value($scenario->getSuccessUrl(), "string"),
+                "failURL" =>  new Value($scenario->getErrorUrl(), "string"),
+                "cancelURL" =>  new Value($scenario->getCancelUrl(), "string"),
             ];
 
             // If phone is not set, it will be asked at signature time
@@ -167,7 +144,7 @@ class UniversignDriver implements DriverInterface
             // Possible types : certified, advanced, simple
             "certificateType" => new Value("simple", "string"),
             // The interface language for this transaction
-            "language" => new Value($this->lang, "string"),
+            "language" => new Value($scenario->getLang(), "string"),
             // handwritten signature : 
             // 0: disabled
             // 1: enabled
@@ -175,12 +152,11 @@ class UniversignDriver implements DriverInterface
             "handwrittenSignatureMode" => new Value(2, "int"),
             // This option indicates how the signers are chained during the signing process.
             // none: must contact physically, email: all signers receive email invitations, web: all signers are present
-            "chainingMode" => new Value('email', "string"),
-
+            "chainingMode" => new Value($this->chainingModeFromInvitation($scenario->getInvitationMode()), "string"),
 
             // If set to True, the first signer will receive an invitation to sign the document(s) by e-mail
             // as soon as the transaction is requested. False by default.
-            "mustContactFirstSigner" => new Value(false, "boolean"),
+            "mustContactFirstSigner" => new Value($this->mustContactFirstFromInvitation($scenario->getInvitationMode()), "boolean"),
             // Tells whether each signer must receive the signed documents by email
             // when the transaction is completed. False by default :
             "finalDocSent" => new Value(false, "boolean"),
@@ -297,5 +273,35 @@ class UniversignDriver implements DriverInterface
         }
 
         return $files;
+    }
+
+    /**
+     * Get chaining mode to use from a scenario's invitation mode
+     *
+     * @param  string  $invitationMode
+     * @return string  none: must contact physically, email: all signers receive email invitations, web: all signers are present
+     */
+    protected function chainingModeFromInvitation(string $invitationMode){
+
+        $chainingMode = 'none';
+        
+        if($invitationMode === Scenario::INVITATION_MODE_EMAIL){
+            $chainingMode = 'email';
+        }else if($invitationMode === Scenario::INVITATION_MODE_CHAIN){
+            $chainingMode = 'web';
+        }
+
+        return $chainingMode;
+    }
+
+    /**
+     * Know if must contact first signer from a scenario's invitation mode
+     *
+     * @param  string  $invitationMode
+     * @return string
+     */
+    protected function mustContactFirstFromInvitation(string $invitationMode){
+
+        return ($invitationMode === Scenario::INVITATION_MODE_EMAIL);
     }
 }

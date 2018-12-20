@@ -3,10 +3,15 @@
 namespace Helori\PhpSign\Elements;
 
 use Helori\PhpSign\Exceptions\NotFoundException;
+use Helori\PhpSign\Exceptions\ValidationException;
 
 
 class Scenario
 {
+    const INVITATION_MODE_NONE = 'none';
+    const INVITATION_MODE_EMAIL = 'email';
+    const INVITATION_MODE_CHAIN = 'chain';
+
     /**
      * The scenario title
      *
@@ -41,6 +46,48 @@ class Scenario
      * @var string
      */
     protected $statusUrl;
+
+    /**
+     * The URL used to redirect the user after a successful signature
+     *
+     * @var string
+     */
+    protected $successUrl;
+
+    /**
+     * The URL used to redirect the user after a canceled signature
+     *
+     * @var string
+     */
+    protected $cancelUrl;
+
+    /**
+     * The URL used to redirect the user after a failed signature
+     *
+     * @var string
+     */
+    protected $errorUrl;
+
+    /**
+     * The language used in the signature UI
+     *
+     * @var string
+     */
+    protected $lang = 'en';
+
+    /**
+     * Allowed languages
+     *
+     * @var array
+     */
+    protected $allowedLanguages = ['en', 'fr'];
+
+    /**
+     * The way signers are invited to sign their documents
+     *
+     * @var array
+     */
+    protected $invitationMode = 'none';
 
     /**
      * Create a new Sign instance.
@@ -247,5 +294,125 @@ class Scenario
     public function setStatusUrl($statusUrl)
     {
         return $this->statusUrl = $statusUrl;
+    }
+
+    /**
+     * Get the URL used to redirect the user after a successful signature
+     *
+     * @return string
+     */
+    public function getSuccessUrl()
+    {
+        return $this->successUrl;
+    }
+
+    /**
+     * Set the URL used to redirect the user after a successful signature
+     *
+     * @param  string  $successUrl
+     * @return string
+     */
+    public function setSuccessUrl($successUrl)
+    {
+        return $this->successUrl = $successUrl;
+    }
+
+    /**
+     * Get the URL used to redirect the user after a canceled signature
+     *
+     * @return string
+     */
+    public function getCancelUrl()
+    {
+        return $this->cancelUrl;
+    }
+
+    /**
+     * Set the URL used to redirect the user after a canceled signature
+     *
+     * @param  string  $cancelUrl
+     * @return string
+     */
+    public function setCancelUrl($cancelUrl)
+    {
+        return $this->cancelUrl = $cancelUrl;
+    }
+
+    /**
+     * Get the URL used to redirect the user after a failed signature
+     *
+     * @return string
+     */
+    public function getErrorUrl()
+    {
+        return $this->errorUrl;
+    }
+
+    /**
+     * Set the URL used to redirect the user after a failed signature
+     *
+     * @param  string  $errorUrl
+     * @return string
+     */
+    public function setErrorUrl($errorUrl)
+    {
+        return $this->errorUrl = $errorUrl;
+    }
+
+    /**
+     * Get the language used in the signature UI
+     *
+     * @return string
+     */
+    public function getLang()
+    {
+        return $this->lang;
+    }
+
+    /**
+     * Set the language used in the signature UI
+     *
+     * @param  string  $lang
+     * @return string
+     */
+    public function setLang($lang)
+    {
+        if(!in_array($lang, $this->allowedLanguages)){
+
+            throw new ValidationException('Signature UI : The language "'.$lang.'" must be one of '.implode(', ', $this->allowedLanguages));
+        }
+
+        return $this->lang = $lang;
+    }
+
+    /**
+     * Get the allowed languages
+     *
+     * @return array
+     */
+    public function getAllowedLanguages()
+    {
+        return $this->allowedLanguages;
+    }
+
+    /**
+     * Get the way signers are invited to sign their documents
+     *
+     * @return string
+     */
+    public function getInvitationMode()
+    {
+        return $this->invitationMode;
+    }
+
+    /**
+     * Set the way signers are invited to sign their documents
+     *
+     * @param  string  $invitationMode
+     * @return string
+     */
+    public function setInvitationMode($invitationMode)
+    {
+        return $this->invitationMode = $invitationMode;
     }
 }
