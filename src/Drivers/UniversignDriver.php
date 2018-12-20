@@ -14,7 +14,7 @@ use Carbon\Carbon;
 
 class UniversignDriver implements DriverInterface
 {
-	/**
+    /**
      * The Universign API Requester
      *
      * @var \Helori\PhpSign\Utilities\XmlRpcRequester
@@ -34,14 +34,28 @@ class UniversignDriver implements DriverInterface
      */
     protected $profile;
 
-	/**
+    /**
+     * The language used on the Universign page
+     *
+     * @var string
+     */
+    protected $lang = 'fr';
+
+    /**
+     * Allowed languages
+     *
+     * @var array
+     */
+    protected $allowedLanguages = ['en', 'fr'];
+
+    /**
      * Create a new UniversignDriver instance.
      *
      * @return void
      */
     public function __construct(array $config)
     {
-		$requiredConfigKeys = ['username', 'password', 'endpoint'];
+        $requiredConfigKeys = ['username', 'password', 'endpoint'];
 
         foreach($requiredConfigKeys as $key){
 
@@ -53,6 +67,15 @@ class UniversignDriver implements DriverInterface
 
         $this->requester = new XmlRpcRequester($config['username'], $config['password'], $config['endpoint']);
         $this->profile = $config['profile'];
+
+        if(isset($config['lang'])){
+            if(!in_array($config['lang'], $this->allowedLanguages)){
+
+                throw new ValidationException('Universign config parameter "'.$key.'" must be one of '.implode(', ', $this->allowedLanguages));
+            }else{
+                $this->lang = $config['lang'];
+            }
+        }
     }
 
     /**
@@ -73,10 +96,10 @@ class UniversignDriver implements DriverInterface
      */
     public function createTransaction(Scenario $scenario)
     {
-    	$signers = [];
-    	$documents = [];
+        $signers = [];
+        $documents = [];
 
-    	foreach($scenario->getSigners() as $scSigner){
+        foreach($scenario->getSigners() as $scSigner){
 
             $signer = [
                 "firstname" => new Value($scSigner->getFirstname(), "string"),
@@ -93,15 +116,15 @@ class UniversignDriver implements DriverInterface
             }
 
             $signers[] = new Value($signer, "struct");
-    	}
+        }
 
-    	foreach($scenario->getDocuments() as $scDocument){
+        foreach($scenario->getDocuments() as $scDocument){
 
-			$signatures = [];
+            $signatures = [];
 
-			foreach($scenario->getSignatures() as $scSignature){
+            foreach($scenario->getSignatures() as $scSignature){
 
-				if($scSignature->getDocumentId() === $scDocument->getId()){
+                if($scSignature->getDocumentId() === $scDocument->getId()){
 
                     $signature = [
                         "page" => new Value($scSignature->getPage(), "int"),
@@ -111,20 +134,20 @@ class UniversignDriver implements DriverInterface
                         "signerIndex" => null,
                     ];
 
-					$signerIndex = null;
-					foreach($scenario->getSigners() as $index => $scSigner){
-						if($scSigner->getId() === $scSignature->getSignerId()){
-							$signature['signerIndex'] = new Value($index, "int");
-						}
-					}
-					if(is_null($signature['signerIndex'])){
+                    $signerIndex = null;
+                    foreach($scenario->getSigners() as $index => $scSigner){
+                        if($scSigner->getId() === $scSignature->getSignerId()){
+                            $signature['signerIndex'] = new Value($index, "int");
+                        }
+                    }
+                    if(is_null($signature['signerIndex'])){
 
-						throw new ValidationException('The signature\'s signerId "'.$scSignature->getSignerId().'" has no corresponding signer');
-					}
+                        throw new ValidationException('The signature\'s signerId "'.$scSignature->getSignerId().'" has no corresponding signer');
+                    }
 
-					$signatures[] = new Value($signature, "struct");
-				}
-			}
+                    $signatures[] = new Value($signature, "struct");
+                }
+            }
 
             $document = [
                 "content" => new Value(file_get_contents($scDocument->getFilepath()), "base64"),
@@ -133,7 +156,7 @@ class UniversignDriver implements DriverInterface
             ];
 
             $documents[] = new Value($document, "struct");
-    	}
+        }
 
         $request = [
             // the profile to use
@@ -144,7 +167,7 @@ class UniversignDriver implements DriverInterface
             // Possible types : certified, advanced, simple
             "certificateType" => new Value("simple", "string"),
             // The interface language for this transaction
-            "language" => new Value("en", "string"),
+            "language" => new Value($this->lang, "string"),
             // handwritten signature : 
             // 0: disabled
             // 1: enabled
@@ -210,29 +233,29 @@ class UniversignDriver implements DriverInterface
 
         switch ($response->structMem('status')->scalarVal()) {
 
-        	case 'ready':
-        		$transactionStatus = Transaction::STATUS_READY;
-        		break;
+            case 'ready':
+                $transactionStatus = Transaction::STATUS_READY;
+                break;
 
-        	case 'expired':
-        		$transactionStatus = Transaction::STATUS_EXPIRED;
-        		break;
+            case 'expired':
+                $transactionStatus = Transaction::STATUS_EXPIRED;
+                break;
 
-        	case 'canceled':
-        		$transactionStatus = Transaction::STATUS_CANCELED;
-        		break;
+            case 'canceled':
+                $transactionStatus = Transaction::STATUS_CANCELED;
+                break;
 
-        	case 'failed':
-        		$transactionStatus = Transaction::STATUS_FAILED;
-        		break;
+            case 'failed':
+                $transactionStatus = Transaction::STATUS_FAILED;
+                break;
 
-        	case 'completed':
-        		$transactionStatus = Transaction::STATUS_COMPLETED;
-        		break;
-        	
-        	default:
-        		$transactionStatus = Transaction::STATUS_UNKNOWN;
-        		break;
+            case 'completed':
+                $transactionStatus = Transaction::STATUS_COMPLETED;
+                break;
+            
+            default:
+                $transactionStatus = Transaction::STATUS_UNKNOWN;
+                break;
         }
 
         $transaction = new Transaction($this->getName());
@@ -259,7 +282,7 @@ class UniversignDriver implements DriverInterface
             $response = $this->requester->sendRequest('requester.getDocuments', [
                 new Value($transactionId, "string")
             ]);
-
+            
             for($i = 0; $i < $response->arraySize(); $i++)
             {
                 $files[] = [
