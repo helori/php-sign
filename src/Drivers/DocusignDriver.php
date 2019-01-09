@@ -333,4 +333,15 @@ class DocusignDriver implements DriverInterface
 
         return $files;
     }
+
+    /**
+     * Cancel a transaction
+     *
+     * @param  string  $transactionId
+     * @return \Helori\PhpSign\Elements\Transaction
+     */
+    public function cancelTransaction(string $transactionId)
+    {
+        throw new SignException('cancelTransaction is not implemented yet for Docusign');
+    }
 }

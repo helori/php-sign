@@ -2,6 +2,8 @@
 
 namespace Helori\PhpSign\Elements;
 
+use Carbon\Carbon;
+
 
 class Transaction
 {
@@ -27,6 +29,20 @@ class Transaction
      * @var string
      */
     protected $status;
+
+    /**
+     * The transaction creation date
+     *
+     * @var \Carbon\Carbon
+     */
+    protected $createdAt;
+
+    /**
+     * The transaction expiration date
+     *
+     * @var \Carbon\Carbon
+     */
+    protected $expireAt;
 
     /**
      * The transaction signers infos
@@ -100,9 +116,10 @@ class Transaction
     /**
      * Get the transaction status text
      *
+     * @param  string  $status
      * @return string
      */
-    public function getStatusText()
+    public static function getStatusText(string $status)
     {
         $texts = [
             self::STATUS_DRAFT => "Draft",
@@ -115,7 +132,7 @@ class Transaction
             self::STATUS_UNKNOWN => "Unknown",
         ];
 
-        return isset($texts[$this->status]) ? $texts[$this->status] : '';
+        return isset($texts[$status]) ? $texts[$status] : '';
     }
 
     /**
@@ -127,6 +144,48 @@ class Transaction
     public function setStatus(string $status)
     {
         return $this->status = $status;
+    }
+
+    /**
+     * Set the transaction creation date
+     *
+     * @param  \Carbon\Carbon  $createdAt
+     * @return \Carbon\Carbon
+     */
+    public function setCreatedAt(?Carbon $createdAt)
+    {
+        return $this->createdAt = $createdAt;
+    }
+
+    /**
+     * Get the transaction creation date
+     *
+     * @return \Carbon\Carbon
+     */
+    public function getCreatedAt()
+    {
+        return $this->createdAt;
+    }
+
+    /**
+     * Set the transaction expiration date
+     *
+     * @param  \Carbon\Carbon  $expireAt
+     * @return \Carbon\Carbon
+     */
+    public function setExpireAt(?Carbon $expireAt)
+    {
+        return $this->expireAt = $expireAt;
+    }
+
+    /**
+     * Get the transaction expiration date
+     *
+     * @return \Carbon\Carbon
+     */
+    public function getExpireAt()
+    {
+        return $this->expireAt;
     }
 
     /**

@@ -49,7 +49,7 @@ class Requester
     /**
      * Create a transaction from a scenario
      *
-     * @param  Scenario  $scenario
+     * @param  \Helori\PhpSign\Elements\Scenario  $scenario
      * @return array
      */
     public function createTransaction(Scenario $scenario)
@@ -61,7 +61,7 @@ class Requester
      * Get a transaction
      *
      * @param  string  $transactionId
-     * @return Transaction
+     * @return \Helori\PhpSign\Elements\Transaction
      */
     public function getTransaction(string $transactionId)
     {
@@ -77,5 +77,16 @@ class Requester
     public function getDocuments(string $transactionId)
     {
         return $this->driver->getDocuments($transactionId);
+    }
+
+    /**
+     * Cancel a transaction
+     *
+     * @param  string  $transactionId
+     * @return \Helori\PhpSign\Elements\Transaction
+     */
+    public function cancelTransaction(string $transactionId)
+    {
+        return $this->driver->cancelTransaction($transactionId);
     }
 }

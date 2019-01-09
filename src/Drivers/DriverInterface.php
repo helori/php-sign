@@ -37,4 +37,12 @@ interface DriverInterface
      * @return array
      */
     public function getDocuments(string $transactionId);
+
+    /**
+     * Cancel a transaction
+     *
+     * @param  string  $transactionId
+     * @return \Helori\PhpSign\Elements\Transaction
+     */
+    public function cancelTransaction(string $transactionId);
 }

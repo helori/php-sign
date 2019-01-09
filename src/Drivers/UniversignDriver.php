@@ -234,10 +234,21 @@ class UniversignDriver implements DriverInterface
                 break;
         }
 
+        $createdAtValue = $response->structMem('creationDate')->scalarVal();
+
+        try{
+            $createdAt = Carbon::parse($createdAtValue);
+        }catch(\Exception $e){
+            throw new SignException("Cannot parse Carbon date : ".$createdAtValue);
+        }
+        
+
         $transaction = new Transaction($this->getName());
         $transaction->setId($transactionId);
         $transaction->setSignersInfos($signersInfos);
         $transaction->setStatus($transactionStatus);
+        $transaction->setCreatedAt($createdAt);
+        $transaction->setExpireAt($createdAt->addDays(14));
 
         return $transaction;
     }
@@ -273,6 +284,21 @@ class UniversignDriver implements DriverInterface
         }
 
         return $files;
+    }
+
+    /**
+     * Cancel a transaction
+     *
+     * @param  string  $transactionId
+     * @return \Helori\PhpSign\Elements\Transaction
+     */
+    public function cancelTransaction(string $transactionId)
+    {
+        $response = $this->requester->sendRequest('requester.cancelTransaction', [
+            new Value($transactionId, "string")
+        ]);
+
+        return $this->getTransaction($transactionId);
     }
 
     /**
