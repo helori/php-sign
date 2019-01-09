@@ -344,4 +344,14 @@ class DocusignDriver implements DriverInterface
     {
         throw new SignException('cancelTransaction is not implemented yet for Docusign');
     }
+
+    /**
+     * Get the driver's specific expiration days
+     *
+     * @return int
+     */
+    public function getExpirationDays()
+    {
+        throw new SignException('getExpirationDays is not implemented yet for Docusign');
+    }
 }

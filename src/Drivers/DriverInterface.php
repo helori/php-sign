@@ -45,4 +45,11 @@ interface DriverInterface
      * @return \Helori\PhpSign\Elements\Transaction
      */
     public function cancelTransaction(string $transactionId);
+
+    /**
+     * Get the driver's specific expiration days
+     *
+     * @return int
+     */
+    public function getExpirationDays();
 }

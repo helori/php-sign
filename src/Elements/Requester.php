@@ -89,4 +89,14 @@ class Requester
     {
         return $this->driver->cancelTransaction($transactionId);
     }
+
+    /**
+     * Get the driver's specific expiration days
+     *
+     * @return int
+     */
+    public function getExpirationDays()
+    {
+        return $this->driver->getExpirationDays();
+    }
 }

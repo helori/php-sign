@@ -73,7 +73,7 @@ class Document
      * @param  string  $name
      * @return string
      */
-    public function setName($name)
+    public function setName(?string $name)
     {
         return $this->name = $name;
     }
@@ -94,7 +94,7 @@ class Document
      * @param  string  $filepath
      * @return string
      */
-    public function setFilepath($filepath)
+    public function setFilepath(?string $filepath)
     {
         return $this->filepath = $filepath;
     }

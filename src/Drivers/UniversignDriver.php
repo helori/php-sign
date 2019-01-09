@@ -3,8 +3,11 @@
 namespace Helori\PhpSign\Drivers;
 
 use Helori\PhpSign\Utilities\XmlRpcRequester;
+use Helori\PhpSign\Utilities\DateParser;
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
+use Helori\PhpSign\Elements\SignerResult;
+use Helori\PhpSign\Elements\DocumentResult;
 use Helori\PhpSign\Exceptions\SignException;
 use Helori\PhpSign\Exceptions\ValidationException;
 use PhpXmlRpc\Value;
@@ -141,6 +144,7 @@ class UniversignDriver implements DriverInterface
             "signers" => new Value($signers, "array"),
             "documents" => new Value($documents, "array"),
             "description" => new Value($scenario->getTitle(), "string"),
+            "customId" => new Value($scenario->getCustomId(), "string"),
             // Possible types : certified, advanced, simple
             "certificateType" => new Value("simple", "string"),
             // The interface language for this transaction
@@ -188,67 +192,60 @@ class UniversignDriver implements DriverInterface
             new Value($transactionId, "string")
         ]);
 
-        $signersInfos = [];
+        $signers = [];
 
-        foreach($response->structMem('signerInfos')->scalarVal() as $signerInfo){
+        foreach($response->structMem('signerInfos')->scalarVal() as $i => $signerInfo){
 
-            $signersInfos[] = [
-                'status' => $signerInfo->structMem('status')->scalarVal(),
-                'url' => $signerInfo->structMem('url')->scalarVal(),
-                'email' => $signerInfo->structMem('email')->scalarVal(),
-                'firstname' => $signerInfo->structMem('firstName')->scalarVal(),
-                'lastname' => $signerInfo->structMem('lastName')->scalarVal(),
-                'action_date' => $signerInfo['actionDate'] ? $signerInfo->structMem('actionDate')->scalarVal() : '',
-                //'error' => $signerInfo->structMem('error')->scalarVal(),
-                //'certificateInfo' => $signerInfo->certificateInfo,
-                //'refusedDocs' => $signerInfo->refusedDocs,
-            ];
+            $signer = new SignerResult();
+
+            $signer->setId($i + 1);
+            $signer->setFirstname($signerInfo->structMem('firstName')->scalarVal());
+            $signer->setLastname($signerInfo->structMem('lastName')->scalarVal());
+            $signer->setEmail($signerInfo->structMem('email')->scalarVal());
+            $signer->setUrl($signerInfo->structMem('url')->scalarVal());
+
+            if($signerInfo->structmemexists('actionDate')){
+                $signer->setActionAt($signerInfo->structMem('actionDate')->scalarVal());
+            }
+
+            if($signerInfo->structmemexists('error')){
+                $signer->setError($signerInfo->structMem('error')->scalarVal());
+            }
+
+            $universignSignerStatus = $signerInfo->structMem('status')->scalarVal();
+            $signerStatus = $this->convertSignerStatus($universignSignerStatus);
+            $signer->setStatus($signerStatus);
+
+            $signers[] = $signer;
+
+            //'certificateInfo' => $signerInfo->certificateInfo,
+            //'refusedDocs' => $signerInfo->refusedDocs,
         }
         
-        $transactionStatus = Transaction::STATUS_UNKNOWN;
-
-        switch ($response->structMem('status')->scalarVal()) {
-
-            case 'ready':
-                $transactionStatus = Transaction::STATUS_READY;
-                break;
-
-            case 'expired':
-                $transactionStatus = Transaction::STATUS_EXPIRED;
-                break;
-
-            case 'canceled':
-                $transactionStatus = Transaction::STATUS_CANCELED;
-                break;
-
-            case 'failed':
-                $transactionStatus = Transaction::STATUS_FAILED;
-                break;
-
-            case 'completed':
-                $transactionStatus = Transaction::STATUS_COMPLETED;
-                break;
-            
-            default:
-                $transactionStatus = Transaction::STATUS_UNKNOWN;
-                break;
-        }
+        $universignStatus = $response->structMem('status')->scalarVal();
+        $transactionStatus = $this->convertTransactionStatus($universignStatus);
 
         $createdAtValue = $response->structMem('creationDate')->scalarVal();
+        $createdAt = DateParser::parse($createdAtValue);
 
-        try{
-            $createdAt = Carbon::parse($createdAtValue);
-        }catch(\Exception $e){
-            throw new SignException("Cannot parse Carbon date : ".$createdAtValue);
+        $customId = null;
+        if($response->structmemexists('customId')){
+            $customId = $response->structMem('customId')->scalarVal();
         }
-        
+
+        $title = null;
+        if($response->structmemexists('description')){
+            $title = $response->structMem('description')->scalarVal();
+        }
 
         $transaction = new Transaction($this->getName());
         $transaction->setId($transactionId);
-        $transaction->setSignersInfos($signersInfos);
         $transaction->setStatus($transactionStatus);
         $transaction->setCreatedAt($createdAt);
-        $transaction->setExpireAt($createdAt->addDays(14));
+        $transaction->setExpireAt($createdAt->copy()->addDays($this->getExpirationDays()));
+        $transaction->setCustomId($customId);
+        $transaction->setTitle($title);
+        $transaction->setSigners($signers);
 
         return $transaction;
     }
@@ -261,7 +258,7 @@ class UniversignDriver implements DriverInterface
      */
     public function getDocuments(string $transactionId)
     {
-        $files = [];
+        $documents = [];
         $transaction = $this->getTransaction($transactionId);
 
         if($transaction->getStatus() === Transaction::STATUS_COMPLETED) {
@@ -272,10 +269,28 @@ class UniversignDriver implements DriverInterface
             
             for($i = 0; $i < $response->arraySize(); $i++)
             {
-                $files[] = [
-                    'name' => $response->arrayMem($i)->structMem('name')->scalarVal(),
-                    'content' => $response->arrayMem($i)->structMem('content')->scalarVal(),
-                ];
+                $name = null;
+                if($response->arrayMem($i)->structmemexists('name')){
+                    $name = $response->arrayMem($i)->structMem('name')->scalarVal();
+                }
+
+                $url = null;
+                if($response->arrayMem($i)->structmemexists('url')){
+                    $url = $response->arrayMem($i)->structMem('url')->scalarVal();
+                }
+
+                $content = null;
+                if($response->arrayMem($i)->structmemexists('content')){
+                    $content = $response->arrayMem($i)->structMem('content')->scalarVal();
+                }
+
+                $document = new DocumentResult();
+                $document->setId($i + 1);
+                $document->setName($name);
+                $document->setUrl($url);
+                $document->setContent($content);
+
+                $documents[] = $document;
             }
         
         }else{
@@ -283,7 +298,7 @@ class UniversignDriver implements DriverInterface
             throw new SignException('Could not download signed files because they are not signed yet.');
         }
 
-        return $files;
+        return $documents;
     }
 
     /**
@@ -299,6 +314,16 @@ class UniversignDriver implements DriverInterface
         ]);
 
         return $this->getTransaction($transactionId);
+    }
+
+    /**
+     * Get the driver's specific expiration days
+     *
+     * @return int
+     */
+    public function getExpirationDays()
+    {
+        return 14;
     }
 
     /**
@@ -329,5 +354,98 @@ class UniversignDriver implements DriverInterface
     protected function mustContactFirstFromInvitation(string $invitationMode){
 
         return ($invitationMode === Scenario::INVITATION_MODE_EMAIL);
+    }
+
+    /**
+     * Convert Universign transaction status to PhpSign transaction status
+     *
+     * @param  string  $universignStatus
+     * @return string
+     */
+    protected function convertTransactionStatus(string $universignStatus)
+    {
+        $status = Transaction::STATUS_UNKNOWN;
+
+        switch ($universignStatus) {
+
+            case 'ready':
+                $status = Transaction::STATUS_READY;
+                break;
+
+            case 'expired':
+                $status = Transaction::STATUS_EXPIRED;
+                break;
+
+            case 'canceled':
+                $status = Transaction::STATUS_CANCELED;
+                break;
+
+            case 'failed':
+                $status = Transaction::STATUS_FAILED;
+                break;
+
+            case 'completed':
+                $status = Transaction::STATUS_COMPLETED;
+                break;
+            
+            default:
+                $status = Transaction::STATUS_UNKNOWN;
+                break;
+        }
+        return $status;
+    }
+
+    /**
+     * Convert Universign signer status to PhpSign signer status
+     *
+     * @param  string  $universignStatus
+     * @return string
+     */
+    protected function convertSignerStatus(string $universignStatus)
+    {
+        $status = SignerResult::STATUS_UNKNOWN;
+
+        switch ($universignStatus) {
+
+            // The signer has not yet been invited to sign. Others signers must sign prior to this user.
+            case 'waiting':
+                $status = SignerResult::STATUS_WAITING;
+                break;
+
+            // The signer has been invited to sign, but has not tried yet.
+            case 'ready':
+                $status = SignerResult::STATUS_READY;
+                break;
+
+            // The signer has accessed the signature service.
+            case 'accessed':
+                $status = SignerResult::STATUS_ACCESSED;
+                break;
+
+            // The signer agreed to sign and has been sent an OTP.
+            case 'code-sent':
+                $status = SignerResult::STATUS_CODE_SENT;
+                break;
+
+            // The signer has successfully signed.
+            case 'signed':
+                $status = SignerResult::STATUS_SIGNED;
+                break;
+
+            // The signer refused to sign, or one of the previous signers canceled or failed its signature.
+            case 'canceled':
+                $status = SignerResult::STATUS_CANCELED;
+                break;
+
+            // An error occurred during the signature. In this case, error is set.
+            case 'failed':
+                $status = SignerResult::STATUS_FAILED;
+                break;
+            
+            default:
+                $status = SignerResult::STATUS_UNKNOWN;
+                break;
+        }
+        return $status;
     }
 }

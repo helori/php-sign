@@ -17,6 +17,13 @@ class Transaction
     const STATUS_UNKNOWN = 'unknown';
 
     /**
+     * The driver used for the transaction
+     *
+     * @var string
+     */
+    protected $driver;
+
+    /**
      * The transaction id
      *
      * @var string
@@ -45,32 +52,32 @@ class Transaction
     protected $expireAt;
 
     /**
-     * The transaction signers infos
-     *
-     * @var array
-     */
-    protected $signersInfos;
-
-    /**
-     * The transaction signed files
-     *
-     * @var array
-     */
-    protected $signedFiles;
-
-    /**
-     * The driver used for the transaction
+     * A custom id to identify the transaction
      *
      * @var string
      */
-    protected $driver;
+    protected $customId;
 
     /**
-     * The transaction original data (from the driver)
+     * A title for the transaction
+     *
+     * @var string
+     */
+    protected $title;
+
+    /**
+     * The transaction signers
      *
      * @var array
      */
-    protected $data;
+    protected $signers;
+
+    /**
+     * The transaction documents
+     *
+     * @var array
+     */
+    protected $documents;
 
     /**
      * Create a new TransactionInfo instance.
@@ -80,6 +87,27 @@ class Transaction
     public function __construct(string $driver)
     {
         $this->setDriver($driver);
+    }
+
+    /**
+     * Get the driver used for the transaction
+     *
+     * @return string
+     */
+    public function getDriver()
+    {
+        return $this->driver;
+    }
+
+    /**
+     * Set the driver used for the transaction
+     *
+     * @param  string  $driver
+     * @return string
+     */
+    public function setDriver(string $driver)
+    {
+        return $this->driver = $driver;
     }
 
     /**
@@ -189,87 +217,87 @@ class Transaction
     }
 
     /**
+     * Get the custom ID of the transaction
+     *
+     * @return string
+     */
+    public function getCustomId()
+    {
+        return $this->customId;
+    }
+
+    /**
+     * Set the custom ID of the transaction
+     *
+     * @param  string  $customId
+     * @return string
+     */
+    public function setCustomId(?string $customId)
+    {
+        return $this->customId = $customId;
+    }
+
+    /**
+     * Get the title
+     *
+     * @return string
+     */
+    public function getTitle()
+    {
+        return $this->title;
+    }
+
+    /**
+     * Set the title
+     *
+     * @param  string  $title
+     * @return string
+     */
+    public function setTitle(string $title)
+    {
+        return $this->title = $title;
+    }
+
+    /**
      * Get the transaction signers infos
      *
      * @return array
      */
-    public function getSignersInfos()
+    public function getSigners()
     {
-        return $this->signersInfos;
+        return $this->signers;
     }
 
     /**
      * Set the transaction signers infos
      *
-     * @param  array  $signersInfos
+     * @param  array  $signers
      * @return array
      */
-    public function setSignersInfos(array $signersInfos)
+    public function setSigners(array $signers)
     {
-        return $this->signersInfos = $signersInfos;
+        return $this->signers = $signers;
     }
 
     /**
-     * Get the transaction signed files
-     *
-     * @return array
-     */
-    public function getSignedFiles()
-    {
-        return $this->signedFiles;
-    }
-
-    /**
-     * Set the transaction signers infos
-     *
-     * @param  array  $signedFiles
-     * @return array
-     */
-    public function setSignedFiles(array $signedFiles)
-    {
-        return $this->signedFiles = $signedFiles;
-    }
-
-    /**
-     * Get the transaction original data
+     * Get the transaction documents
      *
      * @return array
      */
-    public function getData()
+    public function getDocuments()
     {
-        return $this->data;
+        return $this->documents;
     }
 
     /**
-     * Set the transaction original data
+     * Set the transaction documents
      *
-     * @param  array  $data
+     * @param  array  $documents
      * @return array
      */
-    public function setData(array $data)
+    public function setDocuments(array $documents)
     {
-        return $this->data = $data;
-    }
-
-    /**
-     * Get the driver used for the transaction
-     *
-     * @return string
-     */
-    public function getDriver()
-    {
-        return $this->driver;
-    }
-
-    /**
-     * Set the driver used for the transaction
-     *
-     * @param  string  $driver
-     * @return string
-     */
-    public function setDriver(string $driver)
-    {
-        return $this->driver = $driver;
+        return $this->documents = $documents;
     }
 
     /**
@@ -282,10 +310,11 @@ class Transaction
         return [
             'id' => $this->id,
             'status' => $this->status,
-            'signersInfos' => $this->signersInfos,
-            'signedFiles' => $this->signedFiles,
+            'createdAt' => $this->createdAt,
+            'expireAt' => $this->expireAt,
+            'signers' => $this->signers,
+            'documents' => $this->documents,
             'driver' => $this->driver,
-            'data' => $this->data,
         ];
     }
 }

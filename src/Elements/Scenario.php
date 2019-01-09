@@ -90,6 +90,13 @@ class Scenario
     protected $invitationMode = 'none';
 
     /**
+     * A custom id to identify the resulting transaction
+     *
+     * @var string
+     */
+    protected $customId;
+
+    /**
      * Create a new Sign instance.
      *
      * @return void
@@ -414,5 +421,26 @@ class Scenario
     public function setInvitationMode($invitationMode)
     {
         return $this->invitationMode = $invitationMode;
+    }
+
+    /**
+     * Get the custom ID of the resulting transaction
+     *
+     * @return string
+     */
+    public function getCustomId()
+    {
+        return $this->customId;
+    }
+
+    /**
+     * Set the custom ID of the resulting transaction
+     *
+     * @param  string  $customId
+     * @return string
+     */
+    public function setCustomId(string $customId)
+    {
+        return $this->customId = $customId;
     }
 }

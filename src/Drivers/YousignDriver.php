@@ -295,6 +295,16 @@ class YousignDriver implements DriverInterface
     }
 
     /**
+     * Get the driver's specific expiration days
+     *
+     * @return int
+     */
+    public function getExpirationDays()
+    {
+        throw new SignException('getExpirationDays is not implemented yet for Yousign');
+    }
+
+    /**
      * Format Yousign API exceptions
      *
      * @param  object  $apiResult
