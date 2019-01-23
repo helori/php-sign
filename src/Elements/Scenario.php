@@ -122,7 +122,7 @@ class Scenario
      * @param  string  $title
      * @return string
      */
-    public function setTitle($title)
+    public function setTitle(string $title)
     {
         return $this->title = $title;
     }
@@ -298,7 +298,7 @@ class Scenario
      * @param  string  $statusUrl
      * @return string
      */
-    public function setStatusUrl($statusUrl)
+    public function setStatusUrl(string $statusUrl)
     {
         return $this->statusUrl = $statusUrl;
     }
@@ -319,7 +319,7 @@ class Scenario
      * @param  string  $successUrl
      * @return string
      */
-    public function setSuccessUrl($successUrl)
+    public function setSuccessUrl(string $successUrl)
     {
         return $this->successUrl = $successUrl;
     }
@@ -340,7 +340,7 @@ class Scenario
      * @param  string  $cancelUrl
      * @return string
      */
-    public function setCancelUrl($cancelUrl)
+    public function setCancelUrl(string $cancelUrl)
     {
         return $this->cancelUrl = $cancelUrl;
     }
@@ -361,7 +361,7 @@ class Scenario
      * @param  string  $errorUrl
      * @return string
      */
-    public function setErrorUrl($errorUrl)
+    public function setErrorUrl(string $errorUrl)
     {
         return $this->errorUrl = $errorUrl;
     }
@@ -382,7 +382,7 @@ class Scenario
      * @param  string  $lang
      * @return string
      */
-    public function setLang($lang)
+    public function setLang(string $lang)
     {
         if(!in_array($lang, $this->allowedLanguages)){
 
@@ -418,7 +418,7 @@ class Scenario
      * @param  string  $invitationMode
      * @return string
      */
-    public function setInvitationMode($invitationMode)
+    public function setInvitationMode(string $invitationMode)
     {
         return $this->invitationMode = $invitationMode;
     }
