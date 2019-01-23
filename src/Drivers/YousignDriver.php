@@ -95,7 +95,7 @@ class YousignDriver implements DriverInterface
             'description' => $scenario->getTitle(),
             'template' => false,
             'start' => false,
-            'expiresAt' => Carbon::now()->addDays($this->getExpirationDays)->format('Y-m-d'),
+            'expiresAt' => Carbon::now()->addDays($this->getExpirationDays())->format('Y-m-d'),
             'metadata' => $scenario->getCustomId(),
             //'ordered' => true,
             'config' => $config,
@@ -262,6 +262,19 @@ class YousignDriver implements DriverInterface
         }
 
         return $documents;
+    }
+
+    /**
+     * Cancel a transaction
+     *
+     * @param  string  $transactionId
+     * @return \Helori\PhpSign\Elements\Transaction
+     */
+    public function cancelTransaction(string $transactionId)
+    {
+        $result = $this->requester->delete($transactionId);
+        $response = $this->checkedApiResult($result);
+        return $this->getTransaction($transactionId);
     }
 
     /**

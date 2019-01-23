@@ -24,9 +24,16 @@ class PhpSignTest extends TestCase
         
         if($argc === 2){
 
-            // No diver nor transaction ID
-            // => create a new transaction
-            $this->newTransaction();
+            $this->line("Please specify a driver : universign, yousign, docusign");
+
+        }else if($argc === 3){
+
+            // => create a new transaction for the specified driver
+            $driver = $argv[2];
+            if(!in_array($driver, ['yousign', 'universign', 'docusign'])){
+                $this->line("Invalid driver. Allowed drivers are : universign, yousign, docusign");
+            }
+            $this->newTransaction($driver);
 
         }else if($argc === 4){
 
@@ -35,7 +42,7 @@ class PhpSignTest extends TestCase
             $driver = $argv[2];
             $transactionId = $argv[3];
 
-            $this->existingTransaction($transactionId);
+            $this->existingTransaction($driver, $transactionId);
         
         }else{
 
@@ -43,10 +50,10 @@ class PhpSignTest extends TestCase
         }
     }
 
-    protected function newTransaction()
+    protected function newTransaction(string $driver)
     {
         $this->line("---------------------------");
-        $this->line("Universign Test");
+        $this->line(ucfirst($driver)." Test");
         $this->line("---------------------------");
 
         $documents = [];
@@ -131,7 +138,7 @@ class PhpSignTest extends TestCase
         $scenario->setCustomId(uniqId()."");
         //$scenario->setStatusUrl('');
 
-        $requester = $this->getRequester('universign');
+        $requester = $this->getRequester($driver);
         $transaction = $requester->createTransaction($scenario);
         $id = $transaction->getId();
 
@@ -158,9 +165,9 @@ class PhpSignTest extends TestCase
     }
 
 
-    protected function existingTransaction(string $transactionId)
+    protected function existingTransaction(string $driver, string $transactionId)
     {
-        $requester = $this->getRequester('universign');
+        $requester = $this->getRequester($driver);
         $transaction = $requester->getTransaction($transactionId);
         $this->assertTrue(!is_null($transaction->getId()));
 
@@ -198,6 +205,11 @@ class PhpSignTest extends TestCase
                 'password' => 'Melanie',
                 'profile' => 'production',
             ];
+        }else if($driverName === 'yousign'){
+            $driverConfig = [
+                'endpoint' => 'https://staging-api.yousign.com/',
+                'api_key' => '47d7a349a9c043cc9e8852df28a41b36',
+            ];
         }
         return new Requester($driverName, $driverConfig);
     }
@@ -209,7 +221,7 @@ class PhpSignTest extends TestCase
         $this->line("-> Transaction retreived with ID : ".$transaction->getId());
         $this->line("-> Transaction status is : ".Transaction::getStatusText($transaction->getStatus()));
         $this->line("-> Sign the documents at : ".$transaction->getSigners()[0]->getUrl());
-        $this->line("-> Relaunch the test with : \"".implode(' ', $argv)." universign ".$transaction->getId()."\"");
+        $this->line("-> Relaunch the test with : \"".implode(' ', $argv)." ".$transaction->getId()."\"");
         $this->line("-----------------------------------");
     }
 }
