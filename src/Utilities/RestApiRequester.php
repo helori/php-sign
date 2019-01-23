@@ -7,7 +7,7 @@ use GuzzleHttp\Client;
 
 class RestApiRequester
 {
-	/**
+    /**
      * The API endpoint
      *
      * @var string
@@ -21,20 +21,20 @@ class RestApiRequester
      */
     protected $apiKey;
 
-	/**
+    /**
      * Initialize a RestApiRequester
      *
      * @param  string  $apiKey
      * @param  string  $endpoint
      * @return array
      */
-	public function __construct(string $apiKey = '', string $endpoint = '')
-	{
-		$this->apiKey = $apiKey;
-		$this->endpoint = $endpoint;
-	}
+    public function __construct(string $apiKey = '', string $endpoint = '')
+    {
+        $this->setApiKey($apiKey);
+        $this->setEndpoint($endpoint);
+    }
 
-	/**
+    /**
      * Get the API key
      *
      * @return string
@@ -73,7 +73,7 @@ class RestApiRequester
      */
     public function setEndpoint($endpoint)
     {
-        return $this->endpoint = $endpoint;
+        return $this->endpoint = rtrim($endpoint, '/');
     }
 
     /**
@@ -95,9 +95,9 @@ class RestApiRequester
      * @param  array $data
      * @return mixed
      */
-    public function post(string $url, array $data = [])
+    public function post(string $url, array $data = [], array $files = [])
     {
-        return $this->sendRequest('POST', $url, $data, []);
+        return $this->sendRequest('POST', $url, $data, [], $files);
     }
 
     /**
@@ -130,29 +130,45 @@ class RestApiRequester
      * @param  string $url
      * @param  array $data
      * @param  array $query
+     * @param  array $files
      * @return mixed
      */
-    public function sendRequest($verb, $url, $data = [], $query = [])
+    public function sendRequest($verb, $url, $data = [], $query = [], $files = [], $headers = [])
     {
-    	$client = new Client();
+        $client = new Client();
 
         if(!empty($query)){
             $url .= '?'.http_build_query($query);
         }
 
+        $config = [
+            'headers' => array_merge([
+                //'Content-Type' => 'application/json',
+                //'Accept' => 'application/json',
+                'Authorization' => 'Bearer '.$this->apiKey,
+            ], is_array($headers) ? $headers : []),
+            //'auth' => ['anystring', $this->apiKey], 
+            'http_errors' => false,
+        ];
+
+        if(!empty($data)){
+            $config['json'] = $data;
+        }
+
+        if(!empty($files)){
+            $config['multipart'] = [];
+            foreach($files as $param => $abspath){
+                $config['multipart'][] = [
+                    'name' => $param,
+                    'contents' => fopen($abspath, 'r'),
+                ];
+            }
+        }
+
         $result = $client->request(
             $verb, 
-            rtrim($this->endpoint, '/').$url,
-            [
-	            'headers' => [
-                    'Content-Type' => 'application/json',
-	                'Accept' => 'application/json',
-	                'Authorization' => 'Bearer '.$this->apiKey,
-	            ],
-	            //'auth' => ['anystring', $this->apiKey], 
-	            'http_errors' => false,
-	            'json' => $data,
-	        ]
+            $this->endpoint.$url,
+            $config
         );
 
         return $result;

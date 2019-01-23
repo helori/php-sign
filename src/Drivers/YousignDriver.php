@@ -3,11 +3,14 @@
 namespace Helori\PhpSign\Drivers;
 
 use Helori\PhpSign\Utilities\RestApiRequester;
+use Helori\PhpSign\Utilities\DateParser;
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
-use Helori\PhpSign\Exceptions\DriverAuthException;
-use Helori\PhpSign\Exceptions\ValidationException;
+use Helori\PhpSign\Elements\SignerResult;
+use Helori\PhpSign\Elements\DocumentResult;
 use Helori\PhpSign\Exceptions\SignException;
+use Helori\PhpSign\Exceptions\ValidationException;
+use Carbon\Carbon;
 
 
 class YousignDriver implements DriverInterface
@@ -57,13 +60,7 @@ class YousignDriver implements DriverInterface
      */
     public function createTransaction(Scenario $scenario)
     {
-        $data = [
-            'name' => $scenario->getTitle(),
-            //'description' => '',
-            'start' => false,
-            //'ordered' => true,
-            'config' => [],
-        ];
+        $config = [];
 
         if($scenario->getStatusUrl()){
 
@@ -75,7 +72,7 @@ class YousignDriver implements DriverInterface
                 // Other webhooks can be added here...
             ];
 
-            $data['config']['webhook'] = [
+            $config['webhook'] = [
                 // Fired when a procedure is created (POST /procedures)
                 'procedure.started' => $webhookParams,
                 // Fired when a procedure is finished (all members have signed)
@@ -93,7 +90,17 @@ class YousignDriver implements DriverInterface
             ];
         }
 
-        $result = $this->requester->post('/procedures', $data);
+        $result = $this->requester->post('/procedures', [
+            'name' => $scenario->getTitle(),
+            'description' => $scenario->getTitle(),
+            'template' => false,
+            'start' => false,
+            'expiresAt' => Carbon::now()->addDays($this->getExpirationDays)->format('Y-m-d'),
+            'metadata' => $scenario->getCustomId(),
+            //'ordered' => true,
+            'config' => $config,
+        ]);
+
         $procedure = $this->checkedApiResult($result);
 
         // keep track of yousign generated ids : "php-sign document id" => "yousign file id"
@@ -117,14 +124,30 @@ class YousignDriver implements DriverInterface
 
         foreach($scenario->getSigners() as $scSigner){
 
-            $result = $this->requester->post('/members', [
-                //'position' => $scSigner->getId(),
+            if(!$scSigner->getPhone()){
+                throw new SignException('The phone number is required by Yousign');
+            }
+
+            if(!$scSigner->getPhone()){
+                throw new SignException('The email is required by Yousign');
+            }
+
+            $data = [
+                'position' => $scSigner->getId(),
                 'firstname' => $scSigner->getFirstname(),
                 'lastname' => $scSigner->getLastname(),
                 'email' => $scSigner->getEmail(),
                 'phone' => $scSigner->getPhone(),
                 'procedure' => $procedure['id'],
-            ]);
+                'type' => 'signer',
+                'operationLevel' => 'custom', // none, custom
+                'operationCustomModes' => 'sms', // sms, inwebo, email
+                'modeSmsConfiguration' => [
+                    'content' => "Hello, your signature code is {{code}}"
+                ],
+            ];
+
+            $result = $this->requester->post('/members', $data);
 
             $member = $this->checkedApiResult($result);
 
@@ -148,30 +171,6 @@ class YousignDriver implements DriverInterface
             ]);
         }
 
-        $result = $this->requester->post('/signature_uis', [
-            'languages' => $scenario->getAllowedLanguages(),
-            'defaultLanguage' => $scenario->getLang(),
-            'redirectCancel' => [
-                'url' => $scenario->getCancelUrl(),
-                'target' => '_self', // "_top or _blank or _self or _parent
-                'auto' => false,
-            ],
-            'redirectError' => [
-                'url' => $scenario->getErrorUrl(),
-                'target' => '_self',
-                'auto' => false,
-            ],
-            'redirectSuccess' => [
-                'url' => $scenario->getSuccessUrl(),
-                'target' => '_self',
-                'auto' => false,
-            ],
-
-            // TODO : more customization options... 
-            // https://dev.yousign.com/
-        ]);
-        $signatureUI = $this->checkedApiResult($result);
-
         $result = $this->requester->put($procedure['id'], [
             'start' => true,
         ]);
@@ -192,58 +191,37 @@ class YousignDriver implements DriverInterface
         $result = $this->requester->get($transactionId);
         $procedure = $this->checkedApiResult($result);
 
+        $signUrlBase = $requester->getEndpoint().'/procedure/sign?';
+        $signers = [];
+
+        foreach($procedure['members'] as $i => $member){
+
+            $signer = new SignerResult();
+
+            $signer->setId($i + 1);
+            $signer->setFirstname($member['firstname']);
+            $signer->setLastname($member['lastname']);
+            $signer->setEmail($member['email']);
+            $signer->setPhone($member['phone']);
+            $signer->setUrl($signUrlBase.http_build_query(['members' => $member['id']]));
+            $signer->setStatus(self::convertSignerStatus($member['status']));
+            //$signer->setError();
+
+            foreach($member['fileObjects'] as $fileObject){
+                $signer->setActionAt(DateParser::parse($fileObject['executedAt']));
+            }
+            
+            $signers[] = $signer;
+        }
+
         $transaction = new Transaction($this->getName());
         $transaction->setId($transactionId);
-
-        $transactionStatus = Transaction::STATUS_UNKNOWN;
-
-        switch ($procedure['status']) {
-
-            case 'draft':
-                $transactionStatus = Transaction::STATUS_DRAFT;
-                break;
-
-            case 'active':
-                $transactionStatus = Transaction::STATUS_READY;
-                break;
-
-            case 'finished':
-                $transactionStatus = Transaction::STATUS_COMPLETED;
-                break;
-
-            case 'expired':
-                $transactionStatus = Transaction::STATUS_EXPIRED;
-                break;
-
-            case 'refused':
-                $transactionStatus = Transaction::STATUS_REFUSED;
-                break;
-
-            default:
-                $transactionStatus = Transaction::STATUS_UNKNOWN;
-                break;
-        }
-
-        $transaction->setStatus($transactionStatus);
-
-        $signUrlBase = 'https://staging-app.yousign.com/procedure/sign?';
-        $signersInfos = [];
-
-        foreach($procedure['members'] as $member){
-
-            $signersInfo = [
-                'status' => $member['status'],
-                'url' => $signUrlBase.http_build_query(['members' => $member['id']]),
-                'firstname' => $member['firstname'],
-                'lastname' => $member['lastname'],
-                'email' => $member['email'],
-                'phone' => $member['phone'],
-            ];
-
-            $signersInfos[] = $signersInfo;
-        }
-
-        $transaction->setSignersInfos($signersInfos);
+        $transaction->setStatus(self::convertTransactionStatus($procedure['status']));
+        $transaction->setSigners($signersInfos);
+        $transaction->setCreatedAt(DateParser::parse($procedure['createdAt']));
+        $transaction->setExpireAt(DateParser::parse($procedure['expiresAt']));
+        $transaction->setTitle($procedure['name']);
+        //$transaction->setCustomId($customId);
 
         return $transaction;
     }
@@ -256,7 +234,7 @@ class YousignDriver implements DriverInterface
      */
     public function getDocuments(string $transactionId)
     {
-        $files = [];
+        $documents = [];
         $transaction = $this->getTransaction($transactionId);
 
         if($transaction->getStatus() === Transaction::STATUS_COMPLETED) {
@@ -264,15 +242,18 @@ class YousignDriver implements DriverInterface
             $result = $this->requester->get($transactionId);
             $procedure = $this->checkedApiResult($result);
 
-            foreach($procedure['files'] as $procedureFile)
+            foreach($procedure['files'] as $i => $procedureFile)
             {
                 $fileResult = $this->requester->get($procedureFile['id'].'/download');
-                $fileContent = base64_decode($this->checkedApiResult($fileResult));
+                $content = base64_decode($this->checkedApiResult($fileResult));
 
-                $files[] = [
-                    'name' => $procedureFile['name'],
-                    'content' => $fileContent,
-                ];
+                $document = new DocumentResult();
+                $document->setId($i + 1);
+                $document->setName($procedureFile['name']);
+                //$document->setUrl($url);
+                $document->setContent($content);
+
+                $documents[] = $document;
             }
         
         }else{
@@ -280,18 +261,7 @@ class YousignDriver implements DriverInterface
             throw new SignException('Could not download signed files because they are not signed yet.');
         }
 
-        return $files;
-    }
-
-    /**
-     * Cancel a transaction
-     *
-     * @param  string  $transactionId
-     * @return \Helori\PhpSign\Elements\Transaction
-     */
-    public function cancelTransaction(string $transactionId)
-    {
-        throw new SignException('cancelTransaction is not implemented yet for Yousign');
+        return $documents;
     }
 
     /**
@@ -301,7 +271,7 @@ class YousignDriver implements DriverInterface
      */
     public function getExpirationDays()
     {
-        throw new SignException('getExpirationDays is not implemented yet for Yousign');
+        return 14;
     }
 
     /**
@@ -327,5 +297,84 @@ class YousignDriver implements DriverInterface
         }
 
         return $data;
+    }
+
+    /**
+     * Convert Yousign transaction status to PhpSign transaction status
+     *
+     * @param  string  $universignStatus
+     * @return string
+     */
+    protected function convertTransactionStatus(string $yousignStatus)
+    {
+        $status = Transaction::STATUS_UNKNOWN;
+
+        switch ($yousignStatus) {
+
+            case 'draft':
+                $status = Transaction::STATUS_DRAFT;
+                break;
+
+            case 'active':
+                $status = Transaction::STATUS_READY;
+                break;
+
+            case 'finished':
+                $status = Transaction::STATUS_COMPLETED;
+                break;
+
+            case 'expired':
+                $status = Transaction::STATUS_EXPIRED;
+                break;
+
+            case 'refused':
+                $status = Transaction::STATUS_REFUSED;
+                break;
+
+            default:
+                $status = Transaction::STATUS_UNKNOWN;
+                break;
+
+        }
+        return $status;
+    }
+
+    /**
+     * Convert Universign signer status to PhpSign signer status
+     *
+     * @param  string  $universignStatus
+     * @return string
+     */
+    protected function convertSignerStatus(string $universignStatus)
+    {
+        $status = SignerResult::STATUS_UNKNOWN;
+
+        switch ($universignStatus) {
+
+            // The signer has not signed yet
+            case 'pending':
+                $status = SignerResult::STATUS_READY;
+                break;
+
+            // The signer has accessed the signature service.
+            case 'processing':
+                $status = SignerResult::STATUS_ACCESSED;
+                break;
+
+            // The signer has successfully signed.
+            case 'done':
+                $status = SignerResult::STATUS_SIGNED;
+                break;
+
+            // The signer refused to sign, or one of the previous signers canceled or failed its signature.
+            case 'refused':
+                $status = SignerResult::STATUS_CANCELED;
+                break;
+
+            default:
+                $status = SignerResult::STATUS_UNKNOWN;
+                break;
+        }
+        return $status;
     }
 }
