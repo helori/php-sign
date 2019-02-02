@@ -96,7 +96,9 @@ class YousignDriver implements DriverInterface
             'template' => false,
             'start' => false,
             'expiresAt' => Carbon::now()->addDays($this->getExpirationDays())->format('Y-m-d'),
-            'metadata' => $scenario->getCustomId(),
+            'metadata' => [
+                'customId' => $scenario->getCustomId(),
+            ],
             //'ordered' => true,
             'config' => $config,
         ]);
