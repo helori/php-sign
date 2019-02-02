@@ -143,7 +143,7 @@ class YousignDriver implements DriverInterface
                 'procedure' => $procedure['id'],
                 'type' => 'signer',
                 'operationLevel' => 'custom', // none, custom
-                'operationCustomModes' => 'sms', // sms, inwebo, email
+                'operationCustomModes' => ['sms'], // sms, inwebo, email
                 'modeSmsConfiguration' => [
                     'content' => "Hello, your signature code is {{code}}"
                 ],
@@ -193,7 +193,7 @@ class YousignDriver implements DriverInterface
         $result = $this->requester->get($transactionId);
         $procedure = $this->checkedApiResult($result);
 
-        $signUrlBase = $requester->getEndpoint().'/procedure/sign?';
+        $signUrlBase = $this->requester->getEndpoint().'/procedure/sign?';
         $signers = [];
 
         foreach($procedure['members'] as $i => $member){
@@ -210,7 +210,9 @@ class YousignDriver implements DriverInterface
             //$signer->setError();
 
             foreach($member['fileObjects'] as $fileObject){
-                $signer->setActionAt(DateParser::parse($fileObject['executedAt']));
+                if(isset($fileObject['executedAt'])){
+                    $signer->setActionAt(DateParser::parse($fileObject['executedAt']));
+                }
             }
             
             $signers[] = $signer;
@@ -219,11 +221,14 @@ class YousignDriver implements DriverInterface
         $transaction = new Transaction($this->getName());
         $transaction->setId($transactionId);
         $transaction->setStatus(self::convertTransactionStatus($procedure['status']));
-        $transaction->setSigners($signersInfos);
+        $transaction->setSigners($signers);
         $transaction->setCreatedAt(DateParser::parse($procedure['createdAt']));
         $transaction->setExpireAt(DateParser::parse($procedure['expiresAt']));
         $transaction->setTitle($procedure['name']);
-        //$transaction->setCustomId($customId);
+
+        if(isset($procedure['metadata']) && isset($procedure['metadata']['customId'])){
+            $transaction->setCustomId($procedure['metadata']['customId']);
+        }
 
         return $transaction;
     }
@@ -317,7 +322,7 @@ class YousignDriver implements DriverInterface
     /**
      * Convert Yousign transaction status to PhpSign transaction status
      *
-     * @param  string  $universignStatus
+     * @param  string  $yousignStatus
      * @return string
      */
     protected function convertTransactionStatus(string $yousignStatus)
@@ -355,16 +360,16 @@ class YousignDriver implements DriverInterface
     }
 
     /**
-     * Convert Universign signer status to PhpSign signer status
+     * Convert Yousign signer status to PhpSign signer status
      *
-     * @param  string  $universignStatus
+     * @param  string  $yousignStatus
      * @return string
      */
-    protected function convertSignerStatus(string $universignStatus)
+    protected function convertSignerStatus(string $yousignStatus)
     {
         $status = SignerResult::STATUS_UNKNOWN;
 
-        switch ($universignStatus) {
+        switch ($yousignStatus) {
 
             // The signer has not signed yet
             case 'pending':
