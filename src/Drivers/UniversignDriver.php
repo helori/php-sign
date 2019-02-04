@@ -36,13 +36,20 @@ class UniversignDriver implements DriverInterface
     protected $profile;
 
     /**
+     * The Universign API URL
+     *
+     * @var string
+     */
+    protected $endPoint;
+
+    /**
      * Create a new UniversignDriver instance.
      *
      * @return void
      */
     public function __construct(array $config)
     {
-        $requiredConfigKeys = ['username', 'password', 'endpoint'];
+        $requiredConfigKeys = ['username', 'password', 'profile', 'mode'];
 
         foreach($requiredConfigKeys as $key){
 
@@ -52,7 +59,16 @@ class UniversignDriver implements DriverInterface
             }
         }
 
-        $this->requester = new XmlRpcRequester($config['username'], $config['password'], $config['endpoint']);
+        if($config['mode'] === 'production'){
+
+            $this->endPoint = 'https://ws.universign.eu/sign/rpc/';
+
+        }else{
+
+            $this->endPoint = 'https://sign.test.cryptolog.com/sign/rpc/';
+        }
+
+        $this->requester = new XmlRpcRequester($config['username'], $config['password'], $this->endPoint);
         $this->profile = $config['profile'];
     }
 

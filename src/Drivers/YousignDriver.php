@@ -23,13 +23,27 @@ class YousignDriver implements DriverInterface
     protected $requester;
 
     /**
+     * The Yousign API Base URL
+     *
+     * @var string
+     */
+    protected $apiBaseUrl;
+
+    /**
+     * The Yousign Web App URL
+     *
+     * @var string
+     */
+    protected $webAppUrl;
+
+    /**
      * Create a new YousignDriver instance.
      *
      * @return void
      */
     public function __construct(array $config)
     {
-        $requiredConfigKeys = ['api_key', 'endpoint'];
+        $requiredConfigKeys = ['api_key', 'mode'];
 
         foreach($requiredConfigKeys as $key){
 
@@ -39,7 +53,18 @@ class YousignDriver implements DriverInterface
             }
         }
 
-        $this->requester = new RestApiRequester($config['api_key'], $config['endpoint']);
+        if($config['mode'] === 'production'){
+
+            $this->apiBaseUrl = 'https://api.yousign.com';
+            $this->webAppUrl = 'https://webapp.yousign.com';
+
+        }else{
+
+            $this->apiBaseUrl = 'https://staging-api.yousign.com';
+            $this->webAppUrl = 'https://staging-app.yousign.com';
+        }
+
+        $this->requester = new RestApiRequester($config['api_key'], $this->apiBaseUrl);
     }
 
     /**
@@ -193,7 +218,7 @@ class YousignDriver implements DriverInterface
         $result = $this->requester->get($transactionId);
         $procedure = $this->checkedApiResult($result);
 
-        $signUrlBase = $this->requester->getEndpoint().'/procedure/sign?';
+        $signUrlBase = $this->webAppUrl.'/procedure/sign?';
         $signers = [];
 
         foreach($procedure['members'] as $i => $member){

@@ -38,6 +38,13 @@ class DocusignDriver implements DriverInterface
      */
     protected $accountId;
 
+    /**
+     * The Docusign API URL
+     *
+     * @var string
+     */
+    protected $endPoint;
+
 	/**
      * Create a new UniversignDriver instance.
      *
@@ -45,8 +52,27 @@ class DocusignDriver implements DriverInterface
      */
     public function __construct(array $config)
     {
+        $requiredConfigKeys = ['username', 'password', 'integrator_key', 'mode'];
+
+        foreach($requiredConfigKeys as $key){
+
+            if(!isset($config[$key]) || $config[$key] === ''){
+
+                throw new ValidationException('Universign config parameter "'.$key.'" must be set');
+            }
+        }
+
+        if($config['mode'] === 'production'){
+
+            $this->endPoint = 'https://www.docusign.net/restapi';
+
+        }else{
+
+            $this->endPoint = 'https://demo.docusign.net/restapi';
+        }
+
 		$configuration = new Configuration();
-        $configuration->setHost($config['endpoint']);
+        $configuration->setHost($this->endPoint);
 
         $docusignHeader = [
 			'Username' => $config['username'],
