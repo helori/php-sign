@@ -151,10 +151,6 @@ class RestApiRequester
             'http_errors' => false,
         ];
 
-        if(!empty($data)){
-            $config['json'] = $data;
-        }
-
         if(!empty($files)){
             $config['multipart'] = [];
             foreach($files as $param => $abspath){
@@ -163,6 +159,17 @@ class RestApiRequester
                     'contents' => fopen($abspath, 'r'),
                 ];
             }
+
+            foreach($data as $key => $value){
+                $config['multipart'][] = [
+                    'name' => $key,
+                    'contents' => $value,
+                ];
+            }
+
+        }else if(!empty($data)){
+
+            $config['json'] = $data;
         }
 
         $result = $client->request(
