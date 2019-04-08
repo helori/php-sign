@@ -120,7 +120,8 @@ class YousignDriver implements DriverInterface
             'description' => $scenario->getTitle(),
             'template' => false,
             'start' => false,
-            'expiresAt' => Carbon::now()->addDays($this->getExpirationDays())->format('Y-m-d'),
+            // Yousign does not save the time, only the date => go to begining of next day
+            'expiresAt' => Carbon::now()->addDays($this->getExpirationDays() + 1)->startOfDay()->toIso8601ZuluString(), //format('Y-m-d'),
             'metadata' => [
                 'customId' => $scenario->getCustomId(),
             ],
@@ -138,10 +139,17 @@ class YousignDriver implements DriverInterface
 
         foreach($scenario->getDocuments() as $scDocument){
 
+            $metadata = $scDocument->getMetadata();
+
+            // When retreiving the documents later, we have no way to identify them !
+            // So, let's use the metadata to store the document ID :
+            $metadata['temporary-internal-document-id'] = $scDocument->getId();
+
             $result = $this->requester->post('/files', [
                 'name' => $scDocument->getName(),
                 'content' => base64_encode(file_get_contents($scDocument->getFilePath())),
                 'procedure' => $procedure['id'],
+                'metadata' => $metadata,
             ]);
 
             $file = $this->checkedApiResult($result);
@@ -203,7 +211,6 @@ class YousignDriver implements DriverInterface
         ]);
 
         $procedure = $this->checkedApiResult($result);
-
         return $this->getTransaction($procedure['id']);
     }
 
@@ -279,10 +286,16 @@ class YousignDriver implements DriverInterface
                 $fileResult = $this->requester->get($procedureFile['id'].'/download');
                 $content = base64_decode($this->checkedApiResult($fileResult));
 
+                // We use the metadata to identify our documents
+                $metadata = $procedureFile['metadata'];
+                $documentId = $metadata['temporary-internal-document-id'];
+                unset($metadata['temporary-internal-document-id']);
+
                 $document = new DocumentResult();
-                $document->setId($i + 1);
+                $document->setId($documentId);
                 $document->setName($procedureFile['name']);
                 //$document->setUrl($url);
+                $document->setMetadata($metadata);
                 $document->setContent($content);
 
                 $documents[] = $document;

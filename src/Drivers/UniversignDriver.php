@@ -143,10 +143,16 @@ class UniversignDriver implements DriverInterface
                 }
             }
 
+            $metadata = [];
+            foreach($scDocument->getMetadata() as $key => $value){
+                $metadata[$key] = new Value($value, is_int($value) ? "int" : "string");
+            }
+
             $document = [
                 "content" => new Value(file_get_contents($scDocument->getFilepath()), "base64"),
                 "name" => new Value($scDocument->getName(), "string"),
-                "signatureFields" => new Value($signatures, "array")
+                "signatureFields" => new Value($signatures, "array"),
+                "metaData" => new Value($metadata, "struct"),
             ];
 
             $documents[] = new Value($document, "struct");
@@ -298,11 +304,20 @@ class UniversignDriver implements DriverInterface
                     $content = $response->arrayMem($i)->structMem('content')->scalarVal();
                 }
 
+                $metadata = [];
+                if($response->arrayMem($i)->structmemexists('metaData')){
+                    $metadataXmlrpc = $response->arrayMem($i)->structMem('metaData')->scalarVal();
+                    foreach($metadataXmlrpc as $key => $value){
+                        $metadata[$key] = $value->scalarVal();
+                    }
+                }
+
                 $document = new DocumentResult();
                 $document->setId($i + 1);
                 $document->setName($name);
                 $document->setUrl($url);
                 $document->setContent($content);
+                $document->setMetadata($metadata);
 
                 $documents[] = $document;
             }

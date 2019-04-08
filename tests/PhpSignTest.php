@@ -64,12 +64,17 @@ class PhpSignTest extends TestCase
         $document1->setId(1);
         $document1->setName('Document 1');
         $document1->setFilepath(__DIR__.'/Files/document1.pdf');
+        $document1->setMetadata([
+            'localId1' => '123',
+            'localId2' => 456,
+        ]);
         $documents[] = $document1;
 
         $document2 = new Document();
         $document2->setId(2);
         $document2->setName('Document 2');
         $document2->setFilepath(__DIR__.'/Files/document2.pdf');
+        $document2->setMetadata([]);
         $documents[] = $document2;
 
         $signer1 = new Signer();
@@ -184,6 +189,21 @@ class PhpSignTest extends TestCase
 
                 $this->assertTrue($document->getName() === 'Document '.$document->getId());
                 $this->assertTrue(!empty($document->getContent()));
+                
+                $metadata = $document->getMetadata();
+                $this->assertTrue(is_array($metadata));
+
+                if($document->getId() === 1){
+
+                    $this->assertTrue(isset($metadata['localId1']));
+                    $this->assertTrue(isset($metadata['localId2']));
+                    $this->assertTrue($metadata['localId1'] === '123');
+                    $this->assertTrue($metadata['localId2'] === 456);
+
+                }else if($document->getId() === 2){
+                    
+                    $this->assertTrue(is_array($metadata));
+                }
             }
 
         }else{
@@ -200,15 +220,16 @@ class PhpSignTest extends TestCase
 
         if($driverName === 'universign'){
             $driverConfig = [
-                'endpoint' => 'https://sign.test.cryptolog.com/sign/rpc/',
                 'username' => 'helori.lanos@francescpi.com',
                 'password' => 'Melanie',
                 'profile' => 'production',
+                'mode' => 'test',
             ];
         }else if($driverName === 'yousign'){
             $driverConfig = [
                 'endpoint' => 'https://staging-api.yousign.com/',
                 'api_key' => '47d7a349a9c043cc9e8852df28a41b36',
+                'mode' => 'test',
             ];
         }
         return new Requester($driverName, $driverConfig);
@@ -220,8 +241,10 @@ class PhpSignTest extends TestCase
 
         $this->line("-> Transaction retreived with ID : ".$transaction->getId());
         $this->line("-> Transaction status is : ".Transaction::getStatusText($transaction->getStatus()));
-        $this->line("-> Sign the documents at : ".$transaction->getSigners()[0]->getUrl());
-        $this->line("-> Relaunch the test with : \"".implode(' ', $argv)." ".$transaction->getId()."\"");
+        foreach($transaction->getSigners() as $signer){
+            $this->line("-> Sign the documents at : ".$signer->getUrl());
+        }
+        $this->line("-> Relaunch the test with : ".implode(' ', $argv)." ".$transaction->getId());
         $this->line("-----------------------------------");
     }
 }

@@ -27,6 +27,13 @@ class Document
     protected $filepath;
 
     /**
+     * The document metadata
+     *
+     * @var array
+     */
+    protected $metadata = [];
+
+    /**
      * Create a new Document instance.
      *
      * @return void
@@ -97,5 +104,26 @@ class Document
     public function setFilepath(?string $filepath)
     {
         return $this->filepath = $filepath;
+    }
+
+    /**
+     * Get the document's metadata
+     *
+     * @return array
+     */
+    public function getMetadata()
+    {
+        return $this->metadata;
+    }
+
+    /**
+     * Set the document's metadata
+     *
+     * @param  array  $metadata
+     * @return array
+     */
+    public function setMetadata(array $metadata)
+    {
+        return $this->metadata = $metadata;
     }
 }
