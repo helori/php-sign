@@ -20,6 +20,7 @@ use DocuSign\eSign\Model\EventNotification;
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Exceptions\DriverAuthException;
+use Helori\PhpSign\Exceptions\SignException;
 
 
 class DocusignDriver implements DriverInterface
@@ -379,5 +380,16 @@ class DocusignDriver implements DriverInterface
     public function getExpirationDays()
     {
         throw new SignException('getExpirationDays is not implemented yet for Docusign');
+    }
+
+    /**
+     * Convert a webhook request into the common webhook data format
+     *
+     * @param  array  $requestData
+     * @return \Helori\PhpSign\Elements\Webhook
+     */
+    public function formatWebhook(array $requestData)
+    {
+        throw new SignException('formatWebhook is not implemented yet for Docusign');
     }
 }

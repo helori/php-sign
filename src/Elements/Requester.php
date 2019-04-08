@@ -99,4 +99,15 @@ class Requester
     {
         return $this->driver->getExpirationDays();
     }
+
+    /**
+     * Convert a native (driver specific) webhook request into the common webhook data format
+     *
+     * @param  array  $requestData
+     * @return \Helori\PhpSign\Elements\Webhook
+     */
+    public function formatWebhook(array $requestData)
+    {
+        return $this->driver->formatWebhook($requestData);
+    }
 }

@@ -8,6 +8,7 @@ use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Elements\SignerResult;
 use Helori\PhpSign\Elements\DocumentResult;
+use Helori\PhpSign\Elements\Webhook;
 use Helori\PhpSign\Exceptions\SignException;
 use Helori\PhpSign\Exceptions\ValidationException;
 use PhpXmlRpc\Value;
@@ -476,5 +477,69 @@ class UniversignDriver implements DriverInterface
                 break;
         }
         return $status;
+    }
+
+    /**
+     * Convert a webhook request into the common webhook data format
+     *
+     * @param  array  $requestData
+     * @return \Helori\PhpSign\Elements\Webhook
+     */
+    public function formatWebhook(array $requestData)
+    {
+        //throw new SignException('formatWebhook is not implemented yet for Universign');
+
+        if(!isset($requestData['id'])){
+            throw new ValidationException('Universign webhook parameter "id" must be set');
+        }
+
+        if(!isset($requestData['status'])){
+            throw new ValidationException('Universign webhook parameter "status" must be set');
+        }
+
+        // Universign Signer ID has no equivalent in Yousign webhook requests
+        /*if(!isset($requestData['signer'])){
+            throw new ValidationException('Universign webhook parameter "signer" must be set');
+        }*/
+
+        $transactionId = $requestData['id'];
+        $statusCode = intVal($requestData['statusCode']);
+        $status = Transaction::STATUS_UNKNOWN;
+
+        switch ($statusCode) {
+            case 0:
+                $status = Transaction::STATUS_READY;
+                break;
+
+            case 1:
+                $status = Transaction::STATUS_EXPIRED;
+                break;
+
+            case 2:
+                $status = Transaction::STATUS_COMPLETED;
+                break;
+
+            case 3:
+                $status = Transaction::STATUS_REFUSED;
+                break;
+
+            case 4:
+                $status = Transaction::STATUS_FAILED;
+                break;
+
+            case 5:
+                // pending validation by Universign registering authority.
+                $status = Transaction::STATUS_READY; // Not accurate...
+                break;
+            
+            default:
+                throw new ValidationException('Unknown Universign webhook status code : '.$statusCode);
+                break;
+        }
+
+        $webhook = new Webhook();
+        $webhook->setTransactionId($transactionId);
+        $webhook->setTransactionStatus($status);
+        return $webhook;
     }
 }

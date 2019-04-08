@@ -8,6 +8,7 @@ use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Elements\SignerResult;
 use Helori\PhpSign\Elements\DocumentResult;
+use Helori\PhpSign\Elements\Webhook;
 use Helori\PhpSign\Exceptions\SignException;
 use Helori\PhpSign\Exceptions\ValidationException;
 use Carbon\Carbon;
@@ -434,5 +435,67 @@ class YousignDriver implements DriverInterface
                 break;
         }
         return $status;
+    }
+
+    /**
+     * Convert a webhook request into the common webhook data format
+     *
+     * @param  array  $requestData
+     * @return \Helori\PhpSign\Elements\Webhook
+     */
+    public function formatWebhook(array $requestData)
+    {
+        //throw new SignException('formatWebhook is not implemented yet for Yousign');
+
+        if(!isset($requestData['procedure'])){
+            throw new ValidationException('Yousign webhook parameter "procedure" must be set');
+        }
+
+        if(!isset($requestData['eventName'])){
+            throw new ValidationException('Yousign webhook parameter "eventName" must be set');
+        }
+
+        $transactionId = $requestData['procedure'];
+        $eventName = $requestData['eventName'];
+        $status = Transaction::STATUS_UNKNOWN;
+
+        switch ($eventName) {
+
+            case 'procedure.started':
+                $status = Transaction::STATUS_READY;
+                break;
+
+            case 'procedure.finished':
+                $status = Transaction::STATUS_COMPLETED;
+                break;
+
+            case 'procedure.refused':
+                $status = Transaction::STATUS_REFUSED;
+                break;
+
+            case 'procedure.expired':
+                $status = Transaction::STATUS_EXPIRED;
+                break;
+
+            // This is the most corresponding status, but not accurate...
+            case 'member.started':
+                $status = Transaction::STATUS_READY;
+                break;
+
+            // This is the most corresponding status, but not accurate.
+            // We don't use STATUS_COMPLETED here because another signer may be ready to sign.
+            case 'member.finished':
+                $status = Transaction::STATUS_READY;
+                break;
+            
+            default:
+                throw new ValidationException('Unknown Yousign webhook event name : '.$eventName);
+                break;
+        }
+
+        $webhook = new Webhook();
+        $webhook->setTransactionId($transactionId);
+        $webhook->setTransactionStatus($status);
+        return $webhook;
     }
 }

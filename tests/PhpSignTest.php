@@ -9,6 +9,7 @@ use Helori\PhpSign\Elements\Signature;
 use Helori\PhpSign\Elements\Scenario;
 use Helori\PhpSign\Elements\Transaction;
 use Helori\PhpSign\Elements\SignerResult;
+use Helori\PhpSign\Elements\Webhook;
 
 
 class PhpSignTest extends TestCase
@@ -42,6 +43,10 @@ class PhpSignTest extends TestCase
             $driver = $argv[2];
             $transactionId = $argv[3];
 
+            // Test all possible webhooks on existing transaction :
+            $this->webhooks($driver, $transactionId);
+
+            // Test the transaction itself
             $this->existingTransaction($driver, $transactionId);
         
         }else{
@@ -210,6 +215,83 @@ class PhpSignTest extends TestCase
 
             $this->line("-> Transaction infos : ");
             $this->line($transaction->toArray());
+        }
+    }
+
+    protected function webhooks(string $driverName, string $transactionId)
+    {
+        $requester = $this->getRequester($driverName);
+
+        if($driverName === 'universign'){
+
+            $webhook = $requester->formatWebhook([
+                'id' => $transactionId,
+                'status' => 0
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_READY);
+
+            $webhook = $requester->formatWebhook([
+                'id' => $transactionId,
+                'status' => 1
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_EXPIRED);
+
+            $webhook = $requester->formatWebhook([
+                'id' => $transactionId,
+                'status' => 2
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_COMPLETED);
+
+            $webhook = $requester->formatWebhook([
+                'id' => $transactionId,
+                'status' => 3
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_REFUSED);
+
+            $webhook = $requester->formatWebhook([
+                'id' => $transactionId,
+                'status' => 4
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_FAILED);
+        
+        }else if($driverName === 'yousign'){
+
+            $webhook = $requester->formatWebhook([
+                'procedure' => $transactionId,
+                'eventName' => 'procedure.started',
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_READY);
+
+            $webhook = $requester->formatWebhook([
+                'procedure' => $transactionId,
+                'eventName' => 'procedure.finished',
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_COMPLETED);
+
+            $webhook = $requester->formatWebhook([
+                'procedure' => $transactionId,
+                'eventName' => 'procedure.refused',
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_REFUSED);
+
+            $webhook = $requester->formatWebhook([
+                'procedure' => $transactionId,
+                'eventName' => 'procedure.expired',
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_EXPIRED);
+
+            $webhook = $requester->formatWebhook([
+                'procedure' => $transactionId,
+                'eventName' => 'member.started',
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_READY);
+
+            $webhook = $requester->formatWebhook([
+                'procedure' => $transactionId,
+                'eventName' => 'member.finished',
+            ]);
+            $this->assertTrue($webhook->getTransactionStatus() === Transaction::STATUS_READY);
+
         }
     }
 
