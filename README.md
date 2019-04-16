@@ -4,14 +4,14 @@ It allows you to integrate your prefered electronic signature solution without w
 Besides, it brings you a clean and easy way to plug your signature service in your app (probably easier than integrating it directly).
 It also removes you the hassle of maintaining that part of the code.
 
-# Installation and setup
+## Installation and setup
 
 Install the package by running:
 ```bash
 composer require helori/php-sign
 ```
 
-# How does it work ?
+## How does it work ?
 
 To launch an electronic signature process (also refered as a *"transaction"*), you must define some common elements :
 - *"documents"* : the PDF files to be signed.
@@ -22,9 +22,9 @@ These elements are parts of a transaction *"scenario"* which defines how the sig
 Once your scenario is defined, a *"requester"* will send it to the signature service and return a *"transaction"* object.
 The requester must be configured with the secret credentials of your signature service user account.
 
-# Usage
+## Usage
 
-## Create a Transaction
+### Create a Transaction
 
 The first step is to define your scenario and create a transaction.
 Remember : a "transaction" represents a "signature process", with all its signers, documents and options.
@@ -74,7 +74,7 @@ $requester = new Requester($driverName, $driverConfig);
 $transaction = $requester->createTransaction($scenario);
 ```
 
-## Retreive a Transaction
+### Retreive a Transaction
 
 After creating a transaction, you probably need to store the *transaction ID*.
 It allows you to retreive all information about a transaction : status, signers info, documents...
@@ -91,7 +91,7 @@ $requester = new Requester($driverName, $driverConfig);
 $transaction = $requester->getTransaction($scenario);
 ```
 
-## Webhooks
+### Webhooks
 
 The code above allows you to check the transaction status at any time.
 But polling servers to update your transactions may not be the best idea !
@@ -116,7 +116,7 @@ $transactionId = $webhook->getTransactionId();
 $transactionStatus = $webhook->getTransactionStatus();
 ```
 
-## Download the signed documents
+### Download the signed documents
 
 Once the documents have been signed, the transaction status is set to Transaction::STATUS_COMPLETED.
 You can download the signed documents by simply retreiving the transaction :
@@ -130,12 +130,12 @@ foreach($documents as $document){
 }
 ```
 
-## Further...
+### Further integration...
 
 There are other additionnal options you may want to use : sms authentication, return urls, metadata...
 Feel free to look at the source code in the Element folder which is well documented.
 
-# Help & Support
+## Help & Support
 
 Any question or contribution is welcome in the GitHub project's repository :)
 
