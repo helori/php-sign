@@ -240,12 +240,12 @@ class DocusignDriver implements DriverInterface
                 //'idCheckConfigurationName' => 'SMS',
                 // Optional element. Contains the element: senderProvidedNumbers: 
                 // Array that contains a list of phone numbers the recipient can use for SMS text authentication.
-                /*'smsAuthentication' => [
+                'smsAuthentication' => [
                     'senderProvidedNumbers' => [
                         $scSigner->getPhone(),
                     ]
                 ],
-                'phoneAuthentication' => [
+                /*'phoneAuthentication' => [
                     // When set to true then recipient can use whatever phone number they choose to.
                     'recipMayProvideNumber' => true,
                     // A list of phone numbers the recipient can use.
@@ -278,7 +278,7 @@ class DocusignDriver implements DriverInterface
                 // and must generate a signingView URL to redirect the signer.
                 // Setting the magic value 'SIGN_AT_DOCUSIGN' causes the recipient to be both embedded,
                 // and receive an official "please sign" email from DocuSign.
-                'embeddedRecipientStartURL' => 'SIGN_AT_DOCUSIGN',
+                //'embeddedRecipientStartURL' => 'SIGN_AT_DOCUSIGN',
 
                 // ------------------------------------
                 // Signers Recipient
@@ -389,6 +389,11 @@ class DocusignDriver implements DriverInterface
                         'name' => 'customId',
                         'value' => $scenario->getCustomId(),
                     ],
+                    [
+                        'fieldId' => 'returnUrl',
+                        'name' => 'returnUrl',
+                        'value' => $scenario->getSuccessUrl(),
+                    ],
                 ],
             ],
 
@@ -433,8 +438,6 @@ class DocusignDriver implements DriverInterface
         $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/documents');
         $documents = json_decode($apiResult->getBody()->getContents(), true);
 
-        //dd($recipients);
-        //dd($envelope, $recipients, $customFields, $documents);
         $signers = [];
 
         foreach($recipients['signers'] as $docuSigner){
@@ -443,16 +446,27 @@ class DocusignDriver implements DriverInterface
             $signer->setId($docuSigner['recipientId']);
             $signer->setFullname($docuSigner['name']);
             $signer->setEmail($docuSigner['email']);
-            //$signer->setPhone($docuSigner['smsAuthentication']['senderProvidedNumbers'][0]);
+            $signer->setPhone($docuSigner['smsAuthentication']['senderProvidedNumbers'][0]);
             $signer->setStatus($this->convertSignerStatus($docuSigner['status']));
-            //$signer->setUrl($signingView['']);
             //$signer->setActionAt($signerInfo->structMem('actionDate')->scalarVal());
             //$signer->setError($signerInfo->structMem('error')->scalarVal());
 
+            if(isset($docuSigner['customFields']) && count($docuSigner['customFields']) > 0){
+                $signer->setBirthday(DateParser::parse($docuSigner['customFields'][0]));
+            }
+
+            // --------------------------------------------------------------
+            // Signer URL (Tricky subject....)
+            // - If Docusign sends the email, the URL is built as below (aspx...).
+            // But this is hacky and the "a" parameter is missing (this is a security code
+            // sent to access the documents as an alternate method, but can't be found through the API)
+            // - We can build a signer view URL with the API, but it has a very short lifetime.
+            // The solution here would be to provide an App URL that redirects to this signer view immedialty after requesting it.
+            // --------------------------------------------------------------
             $url = 'https://demo.docusign.net/Member/EmailStart.aspx?'.http_build_query([
-                // Security code
+                // Security code : only one missing !
                 'a' => '',
-                // ?
+                // This special 'cccc' value is always sent with SIGN_AT_DOCUSIGN
                 'acct' => 'cccccccc-cccc-cccc-cccc-cccccccccccc',
                 // Recipient id Guid
                 'er' => $docuSigner['recipientIdGuid'],
@@ -460,50 +474,42 @@ class DocusignDriver implements DriverInterface
                 'espei' => $transactionId,
             ]);
 
-            //https://demo.docusign.net/Member/EmailStart.aspx?a=b016ccb4-a910-41bb-adbd-e73fc57b84c7&er=aa054431-b7c8-4554-96ae-5bc528d3577d&espei=ea3f9f97-5eed-43d1-80a4-4f22e8348cf8
-            //https://demo.docusign.net/Member/EmailStart.aspx?a=b016ccb4-a910-41bb-adbd-e73fc57b84c7&er=aa054431-b7c8-4554-96ae-5bc528d3577d&espei=ea3f9f97-5eed-43d1-80a4-4f22e8348cf8
-
             $signer->setUrl($url);
 
-            /*https://demo.docusign.net/Member/EmailStart.aspx?
-            a=82aa767f-1447-407c-ad66-e297f49b16e7& //
-            acct=c9b18526-effe-417f-8165-033f44ab0af7&
-            er=0e8d6c91-f3e9-4b5e-a59b-ad060f5832dd&
-            espei=1f185fa7-e81d-45f5-b1ea-15a6160c5448*/
-
-            /*https://demo.docusign.net/Member/EmailStart.aspx?
-                a=28c42209-555f-49f4-97b1-9cf375921c7a&
-                acct=c9b18526-effe-417f-8165-033f44ab0af7&
-                er=b000ff18-38b3-4a66-a431-c21fed21839e&
-                espei=a90da8e2-0a4d-4de5-be3b-4987f0592b3f*/
-
-            if(isset($docuSigner['customFields']) && count($docuSigner['customFields']) > 0){
-                $signer->setBirthday(DateParser::parse($docuSigner['customFields'][0]));
-            }
-
-            $signers[] = $signer;
 
             // The signer URL has very short lifetime
             // It can be re-generated as much as needed
             // Use it quickly after retreiving it (making a redirect)
-            $apiResult = $this->requester->post('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/views/recipient', [
+            $recipientViewParams = [
+                'clientUserId' => $docuSigner['recipientId'],
+                'recipientId' => $docuSigner['recipientId'],
+                'userId' => $docuSigner['recipientId'],
+                'email' => $docuSigner['email'],
+                'userName' => $docuSigner['name'],
+                'returnUrl' => $docuSigner['id'],
+                // Required. Choose a value that most closely matches the technique your application used to authenticate the recipient / signer.
+                // Choose a value from this list: Biometric, Email, HTTPBasicAuth, Kerberos, KnowledgeBasedAuth, None, PaperDocuments, Password, RSASecureID, SingleSignOn_CASiteminder, SingleSignOn_InfoCard, SingleSignOn_MicrosoftActiveDirectory, SingleSignOn_Other, SingleSignOn_Passport, SingleSignOn_SAML, Smartcard, SSLMutualAuth, X509Certificate
+                // This information is included in the Certificate of Completion.
+                'authenticationMethod' => 'Email',
+            ];
 
-            ]);
+            if(isset($customFields['textCustomFields'])){
+                foreach($customFields['textCustomFields'] as $customField){
+                    if($customField['name'] === 'returnUrl'){
+                        $recipientViewParams['returnUrl'] = $customField['value'];
+                    }
+                }
+            }
+
+            $apiResult = $this->requester->post('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/views/recipient', $recipientViewParams);
             $recipientView = json_decode($apiResult->getBody()->getContents(), true);
 
-            /*$recipientViewRequest = new RecipientViewRequest();
-            $recipientViewRequest->setReturnUrl('https://algoart.fr/return');
-            $recipientViewRequest->setAuthenticationMethod("email");
-            $recipientViewRequest->setUserName($docuSigner->getName());
-            $recipientViewRequest->setEmail($docuSigner->getEmail());
-            $recipientViewRequest->setRecipientId($docuSigner->getRecipientId());
-            $recipientViewRequest->setClientUserId($docuSigner->getClientUserId());
+            dd($recipientView);
 
-            $signingView = $envelopeApi->createRecipientView(
-                $this->accountId, 
-                $envelope->getEnvelopeId(), 
-                $recipientViewRequest);*/
+            $signers[] = $signer;
         }
+
+        dd($envelope, $recipients, $customFields, $documents);
 
         $transaction = new Transaction($this->getName());
         $transaction->setId($envelope['envelopeId']);
