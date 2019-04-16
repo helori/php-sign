@@ -10,7 +10,7 @@ class DateParser
     /**
      * Convert a date to a Carbon instance
      *
-     * @param  mixed  $actionAt
+     * @param  mixed $dateInput
      * @return \Carbon\Carbon|null
      */
     public static function parse($dateInput)

@@ -83,9 +83,9 @@ class RestApiRequester
      * @param  array $query
      * @return mixed
      */
-    public function get(string $url, array $query = [])
+    public function get(string $url, array $query = [], $headers = [])
     {
-        return $this->sendRequest('GET', $url, [], $query);
+        return $this->sendRequest('GET', $url, [], $query, [], $headers);
     }
 
     /**
@@ -95,9 +95,9 @@ class RestApiRequester
      * @param  array $data
      * @return mixed
      */
-    public function post(string $url, array $data = [], array $files = [])
+    public function post(string $url, array $data = [], array $files = [], $headers = [])
     {
-        return $this->sendRequest('POST', $url, $data, [], $files);
+        return $this->sendRequest('POST', $url, $data, [], $files, $headers);
     }
 
     /**

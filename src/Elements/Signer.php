@@ -133,6 +133,21 @@ class Signer
     }
 
     /**
+     * Set the signer's fullname (firstname + lastname)
+     *
+     * @param  string  $fullname
+     * @return string
+     */
+    public function setFullname(string $fullname)
+    {
+        $firstname = trim(substr($fullname, 0, strpos($fullname, ' ')));
+        $lastname = trim(substr($fullname, strpos($fullname, ' ')));
+        $this->setFirstname($firstname);
+        $this->setLastname($lastname);
+        return $this->firstname.' '.$this->lastname;
+    }
+
+    /**
      * Get the signer's email
      *
      * @return string

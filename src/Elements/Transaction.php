@@ -11,7 +11,7 @@ class Transaction
     const STATUS_READY = 'ready';
     const STATUS_EXPIRED = 'expired';
     const STATUS_CANCELED = 'canceled';
-    const STATUS_REFUSED = 'refused';
+    const STATUS_REFUSED = 'canceled';
     const STATUS_FAILED = 'failed';
     const STATUS_COMPLETED = 'completed';
     const STATUS_UNKNOWN = 'unknown';
