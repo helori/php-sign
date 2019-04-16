@@ -26,8 +26,7 @@ The requester must be configured with the secret credentials of your signature s
 
 ### Create a Transaction
 
-The first step is to define your scenario and create a transaction.
-Remember : a "transaction" represents a "signature process", with all its signers, documents and options.
+The first step is to define a *scenario* to create a *transaction*.
 
 ```php
 use Helori\PhpSign\Elements\Document;
@@ -44,10 +43,10 @@ $document->setFilepath('/document/1/absolute/path');
 
 $signer = new Signer();
 $signer->setId(1);
-$document->setFirstname('John');
-$document->setLastname('Doe');
-$document->setEmail('john@doe.com');
-$document->setPhone('+33611223344');
+$signer->setFirstname('John');
+$signer->setLastname('Doe');
+$signer->setEmail('john@doe.com');
+$signer->setPhone('+33611223344');
 
 $signature = new Signature();
 $signature->setDocumentId(1);
@@ -64,31 +63,33 @@ $scenario->setSigners([$signer]);
 $scenario->setDocuments([$document]);
 $scenario->setSignatures([$signature]);
 
-$driverName = 'yousign';
+// You may use your own signature service configuration here :
+$driverName = 'yousign'; // 'universign', 'docusign', ...
 $driverConfig = [
+    // mode : can be 'production' for production mode, or another (free) value for testing mode
     'mode' => 'production',
-    'api_key' => 'your_secret_api_key',
+    'api_key' => 'your_yousign_secret_api_key',
 ];
 
 $requester = new Requester($driverName, $driverConfig);
 $transaction = $requester->createTransaction($scenario);
 ```
 
-### Retreive a Transaction
+### Retrieve a Transaction
 
-After creating a transaction, you probably need to store the *transaction ID*.
-It allows you to retreive all information about a transaction : status, signers info, documents...
-You may at least save this ID in your local database to record your transaction.
+After creating a *transaction*, you probably need to store its *transaction ID*.
+It allows you to retrieve all information about a transaction : status, signers info, documents...
+You may at a minimum save the ID in your database.
 
 The transaction ID is a string, but doesn't have a standard format. 
-It is the unique ID used by your signature service, and thus its length adn pattern may vary.
+It is the unique ID used by your signature service, and thus its length and pattern may vary.
 For example, it can be a Docusign "envelope ID", or a Yousign "procedure ID", or a Universign "transaction ID"...
 
-Here is an example of how to retreive a transaction from its ID :
+Here is an example of how to retrieve a transaction from its ID :
 
 ```php
 $requester = new Requester($driverName, $driverConfig);
-$transaction = $requester->getTransaction($scenario);
+$transaction = $requester->getTransaction($transactionId);
 ```
 
 ### Webhooks
@@ -110,8 +111,11 @@ It will be automatically populated with the request params.
 
 ```php
 use Helori\PhpSign\Elements\Webhook;
+
+// Automatically populated with the current request params
 $webhook = new Webhook();
 
+// Get the transaction ID and status from the webhook to decide what you need to do.
 $transactionId = $webhook->getTransactionId();
 $transactionStatus = $webhook->getTransactionStatus();
 ```
@@ -119,25 +123,26 @@ $transactionStatus = $webhook->getTransactionStatus();
 ### Download the signed documents
 
 Once the documents have been signed, the transaction status is set to Transaction::STATUS_COMPLETED.
-You can download the signed documents by simply retreiving the transaction :
+You can download the signed documents by simply calling the getDocuments() method :
 
 ```php
 $requester = new Requester($driverName, $driverConfig);
 $documents = $requester->getDocuments($transactionId);
+
 foreach($documents as $document){
     $content = $document->getContent();
-    file_put_contents('/path/you/want/to/store/the/document.pdf', $document->getContent());
+    file_put_contents('/path/where/you/want/to/store/the/document.pdf', $document->getContent());
 }
 ```
 
 ### Further integration...
 
-There are other additionnal options you may want to use : sms authentication, return urls, metadata...
-Feel free to look at the source code in the Element folder which is well documented.
+There are other options you may want to use : sms authentication, return urls, metadata...
+Feel free to look at the source code (especially the "Elements“ folder) which is well documented.
 
 ## Help & Support
 
-Any question or contribution is welcome in the GitHub project's repository :)
+Any question or contribution is welcome :)
 
 
 
