@@ -336,7 +336,7 @@ class YousignDriver implements DriverInterface
     /**
      * Format Yousign API exceptions
      *
-     * @param  object  $apiResult
+     * @param  object $apiResult
      * @return mixed
      */
     public function checkedApiResult($apiResult)

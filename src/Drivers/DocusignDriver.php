@@ -34,7 +34,7 @@ use Firebase\JWT\JWT;
 
 class DocusignDriver implements DriverInterface
 {
-	/**
+    /**
      * The Docusign API Requester
      *
      * @var \Helori\PhpSign\Utilities\RestApiRequester
@@ -70,9 +70,9 @@ class DocusignDriver implements DriverInterface
      *
      * @var string
      */
-    protected $signatureUrl;
+    //protected $signatureUrl;
 
-	/**
+    /**
      * Create a new DocusignDriver instance.
      *
      * @return void
@@ -90,7 +90,7 @@ class DocusignDriver implements DriverInterface
             // A redirect URI associated to the Integrator key
             'redirect_uri',
             // The URL that will redirect the signers to Docusign signature page
-            'signature_url',
+            //'signature_url',
         ];
 
         foreach($requiredConfigKeys as $key){
@@ -112,7 +112,25 @@ class DocusignDriver implements DriverInterface
             $this->authEndPoint = 'https://account-d.docusign.com';
         }
 
-        $this->signatureUrl = rtrim($config['signature_url'], '/');
+        //$this->signatureUrl = rtrim($config['signature_url'], '/');
+
+        // ---------------------------------------------------------------
+        // Legacy Auth
+        // ---------------------------------------------------------------
+        /*$docusignHeader = json_encode([
+            'Username' => $config['username'],
+            'Password' => $config['password'],
+            'IntegratorKey' => $config['integrator_key'],
+        ], JSON_FORCE_OBJECT);
+
+        $requester = new RestApiRequester('', $this->endPoint);
+        $apiResult = $requester->get('/login_information', [], [
+            'X-DocuSign-Authentication' => $docusignHeader,
+        ]);
+        $data = $this->checkedApiResult($apiResult);
+        dd($data);*/
+        
+        
 
         // ---------------------------------------------------------------
         // Create Access Token
@@ -141,7 +159,7 @@ class DocusignDriver implements DriverInterface
         ], [], [
             'Accept' => 'application/json'
         ]);
-        $data = json_decode($apiResult->getBody()->getContents(), true);
+        $data = $this->checkedApiResult($apiResult);
 
 
         // ---------------------------------------------------------------
@@ -173,7 +191,7 @@ class DocusignDriver implements DriverInterface
         // Get User Info
         // ---------------------------------------------------------------
         $apiResult = $requester->get('/oauth/userinfo');
-        $data = json_decode($apiResult->getBody()->getContents(), true);
+        $data = $this->checkedApiResult($apiResult);
         $this->accountId = $data['accounts'][0]['account_id'];
 
         $requester->setEndpoint($this->endPoint);
@@ -203,7 +221,7 @@ class DocusignDriver implements DriverInterface
         // -------------------------------------------
         $signers = [];
 
-    	foreach($scenario->getSigners() as $scSigner){
+        foreach($scenario->getSigners() as $scSigner){
 
             // -------------------------------------------
             // A Signer is a specific Recipient type
@@ -303,7 +321,7 @@ class DocusignDriver implements DriverInterface
             // -------------------------------------------
             $signHereTabs = [];
             foreach($scenario->getSignatures() as $scSignature){
-            	if($scSignature->getSignerId() === $scSigner->getId()){
+                if($scSignature->getSignerId() === $scSigner->getId()){
                     $signHereTabs[] = [
                         'xPosition' => $scSignature->getX(),
                         'yPosition' => $scSignature->getY(),
@@ -312,19 +330,19 @@ class DocusignDriver implements DriverInterface
                         'documentId' => $scSignature->getDocumentId(),
                         'tabLabel' => $scSignature->getLabel(),
                     ];
-            	}
+                }
             }
             $signer['tabs']['signHereTabs'] = $signHereTabs;
 
             $signers[] = $signer;
-    	}
+        }
 
         // -------------------------------------------
         // Documents
         // -------------------------------------------
         $documents = [];
 
-    	foreach($scenario->getDocuments() as $scDocument){
+        foreach($scenario->getDocuments() as $scDocument){
 
             $documents[] = [
                 // A user-specified ID that identifies this document. You'll use this ID to associate a tab with a document.
@@ -336,7 +354,7 @@ class DocusignDriver implements DriverInterface
                 // The file extension of the document file.
                 'fileExtension' => 'PDF',
             ];
-    	}
+        }
 
         // -------------------------------------------
         // Envelope
@@ -412,7 +430,7 @@ class DocusignDriver implements DriverInterface
         ];
 
         $apiResult = $this->requester->post('/accounts/'.$this->accountId.'/envelopes', $envelope);
-        $data = json_decode($apiResult->getBody()->getContents(), true);
+        $data = $this->checkedApiResult($apiResult);
 
         $envelopeId = $data['envelopeId'];
         return $this->getTransaction($envelopeId);
@@ -427,16 +445,18 @@ class DocusignDriver implements DriverInterface
     public function getTransaction(string $transactionId)
     {
         $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId);
-        $envelope = json_decode($apiResult->getBody()->getContents(), true);
+        $envelope = $this->checkedApiResult($apiResult);
 
         $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/recipients');
-        $recipients = json_decode($apiResult->getBody()->getContents(), true);
+        $recipients = $this->checkedApiResult($apiResult);
 
         $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/custom_fields');
-        $customFields = json_decode($apiResult->getBody()->getContents(), true);
+        $customFields = $this->checkedApiResult($apiResult);
 
         $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/documents');
-        $documents = json_decode($apiResult->getBody()->getContents(), true);
+        $documents = $this->checkedApiResult($apiResult);
+
+        // dd($envelope, $recipients, $customFields, $documents);
 
         $signers = [];
 
@@ -483,10 +503,8 @@ class DocusignDriver implements DriverInterface
             $recipientViewParams = [
                 'clientUserId' => $docuSigner['recipientId'],
                 'recipientId' => $docuSigner['recipientId'],
-                'userId' => $docuSigner['recipientId'],
                 'email' => $docuSigner['email'],
                 'userName' => $docuSigner['name'],
-                'returnUrl' => $docuSigner['id'],
                 // Required. Choose a value that most closely matches the technique your application used to authenticate the recipient / signer.
                 // Choose a value from this list: Biometric, Email, HTTPBasicAuth, Kerberos, KnowledgeBasedAuth, None, PaperDocuments, Password, RSASecureID, SingleSignOn_CASiteminder, SingleSignOn_InfoCard, SingleSignOn_MicrosoftActiveDirectory, SingleSignOn_Other, SingleSignOn_Passport, SingleSignOn_SAML, Smartcard, SSLMutualAuth, X509Certificate
                 // This information is included in the Certificate of Completion.
@@ -502,14 +520,15 @@ class DocusignDriver implements DriverInterface
             }
 
             $apiResult = $this->requester->post('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/views/recipient', $recipientViewParams);
-            $recipientView = json_decode($apiResult->getBody()->getContents(), true);
-
-            dd($recipientView);
-
+            try{
+                $recipientView = $this->checkedApiResult($apiResult);
+                $signer->setUrl($recipientView['url']);
+            }catch(\Exception $e){
+                // 
+            }
+            
             $signers[] = $signer;
         }
-
-        dd($envelope, $recipients, $customFields, $documents);
 
         $transaction = new Transaction($this->getName());
         $transaction->setId($envelope['envelopeId']);
@@ -529,8 +548,6 @@ class DocusignDriver implements DriverInterface
             }
         }
 
-        dd($transaction);
-
         return $transaction;
     }
 
@@ -542,48 +559,38 @@ class DocusignDriver implements DriverInterface
      */
     public function getDocuments(string $transactionId)
     {
-        $files = [];
+        $documents = [];
 
-        $envelopeApi = new EnvelopesApi($this->client);
+        $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/documents');
+        $documentsList = $this->checkedApiResult($apiResult);
 
-        $docsList = $envelopeApi->listDocuments($this->accountId, $transactionId);
-        $documents = $docsList->getEnvelopeDocuments();
+        if(!isset($documentsList['envelopeDocuments'])){
+            throw new \Exception('Could not retrieve Docusign documents');
+        }
 
-        foreach($documents as $document)
+        foreach($documentsList['envelopeDocuments'] as $evnelopeDocument)
         {
             // The signature certificate is one of the returned documents
-            $isCertificate = (strpos($document->getDocumentId(), 'certificate') !== false);
+            $isCertificate = (strpos($evnelopeDocument['documentId'], 'certificate') !== false);
             if($isCertificate){
                 continue;
             }
 
-            $content = $envelopeApi->getDocument($this->accountId, $transactionId, $document->getDocumentId());
+            $apiResult = $this->requester->get('/accounts/'.$this->accountId.'/envelopes/'.$transactionId.'/documents/'.$evnelopeDocument['documentId']);
+            $content = $this->checkedApiResult($apiResult, false);
 
-            $files[] = [
-                'name' => $document->getName(),
-                'content' => $content,
 
-                // Universign specific :
-                'attachment_tab_id' => $document->getAttachmentTabId(),
-                'available_document_types' => $document->getAvailableDocumentTypes(),
-                'contains_pdf_form_fields' => $document->getContainsPdfFormFields(),
-                'display' => $document->getDisplay(),
-                'document_fields' => $document->getDocumentFields(),
-                'document_group' => $document->getDocumentGroup(),
-                'document_id' => $document->getDocumentId(),
-                'error_details' => $document->getErrorDetails(),
-                'include_in_download' => $document->getIncludeInDownload(),
-                'order' => $document->getOrder(),
-                'pages' => $document->getPages(),
-                'signer_must_acknowledge' => $document->getSignerMustAcknowledge(),
-                'template_locked' => $document->getTemplateLocked(),
-                'template_required' => $document->getTemplateRequired(),
-                'type' => $document->getType(),
-                'uri' => $document->getUri(),
-            ];
+            $document = new DocumentResult();
+            $document->setId($evnelopeDocument['documentId']);
+            $document->setName($evnelopeDocument['name']);
+            $document->setContent($content);
+            //$document->setUrl($url);
+            //$document->setMetadata($metadata);
+
+            $documents[] = $document;
         }
 
-        return $files;
+        return $documents;
     }
 
     /**
@@ -718,7 +725,43 @@ class DocusignDriver implements DriverInterface
      */
     public function cancelTransaction(string $transactionId)
     {
-        throw new SignException('cancelTransaction is not implemented yet for Docusign');
+        $apiResult = $this->requester->put('/accounts/'.$this->accountId.'/envelopes/'.$transactionId, [
+            // To void an in-process envelope :
+            'status' => 'voided',
+            'voidedReason' => 'canceled',
+            // To place documents, attachments, and tabs in the purge queue :
+            'purgeState' => 'documents_and_metadata_queued',
+        ]);
+        $envelope = $this->checkedApiResult($apiResult);
+        return $this->getTransaction($transactionId);
+    }
+
+    /**
+     * Format Docusign API exceptions
+     *
+     * @param  object $apiResult
+     * @param  bool $asJson
+     * @return mixed
+     */
+    public function checkedApiResult($apiResult, bool $asJson = true)
+    {
+        $contents = $apiResult->getBody()->getContents();
+
+        if($apiResult->getStatusCode() >= 400){
+
+            // Always JSON if an error occured
+            $jsonData = json_decode($contents, true);
+            $message = $apiResult->getReasonPhrase();
+            
+            if(isset($data['message'])){
+                $message = $data['message'];
+            }else if(isset($data['errorCode'])){
+                $message = $data['errorCode'];
+            }
+            throw new \Exception($message, $apiResult->getStatusCode());
+        }
+
+        return $asJson ? json_decode($contents, true) : $contents;
     }
 
     /**

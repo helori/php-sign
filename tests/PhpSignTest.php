@@ -319,7 +319,8 @@ class PhpSignTest extends TestCase
 
             $driverConfig = [
                 'mode' => 'test',
-                'signature_url' => 'http://wime-light.test/docusign/signature',
+                'username' => 'helori@algoart.fr',
+                'password' => 'Melanie',
                 'integrator_key' => '3cdcc6e3-2e08-45ad-9076-0eb584732ea7',
                 'user_id' => '41cdc578-2686-4e82-b00d-c6b2b4997be0',
                 'redirect_uri' => 'https://algoart.fr/docusign-redirect',
