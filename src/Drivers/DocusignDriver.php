@@ -434,7 +434,7 @@ class DocusignDriver implements DriverInterface
         $documents = json_decode($apiResult->getBody()->getContents(), true);
 
         //dd($recipients);
-        dd($envelope, $recipients, $customFields, $documents);
+        //dd($envelope, $recipients, $customFields, $documents);
         $signers = [];
 
         foreach($recipients['signers'] as $docuSigner){
