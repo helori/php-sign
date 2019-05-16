@@ -3,6 +3,7 @@
 namespace Helori\PhpSign\Elements;
 
 use Carbon\Carbon;
+use Helori\PhpSign\Utilities\Str;
 
 
 class Signer
@@ -98,7 +99,7 @@ class Signer
      */
     public function setFirstname(string $firstname)
     {
-        return $this->firstname = ucfirst(strtolower($firstname));
+        return $this->firstname = Str::ucfirst(Str::lower($firstname));
     }
 
     /**
@@ -119,7 +120,7 @@ class Signer
      */
     public function setLastname(string $lastname)
     {
-        return $this->lastname = strtoupper($lastname);
+        return $this->lastname = Str::upper($lastname);
     }
 
     /**
@@ -140,8 +141,8 @@ class Signer
      */
     public function setFullname(string $fullname)
     {
-        $firstname = trim(substr($fullname, 0, strpos($fullname, ' ')));
-        $lastname = trim(substr($fullname, strpos($fullname, ' ')));
+        $firstname = trim(Str::substr($fullname, 0, strpos($fullname, ' ')));
+        $lastname = trim(Str::substr($fullname, strpos($fullname, ' ')));
         $this->setFirstname($firstname);
         $this->setLastname($lastname);
         return $this->firstname.' '.$this->lastname;
