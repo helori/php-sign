@@ -248,7 +248,7 @@ class UniversignDriver implements DriverInterface
 
         $createdAtValue = $response->structMem('creationDate')->scalarVal();
         $createdAt = DateParser::parse($createdAtValue);
-
+        
         $customId = null;
         if($response->structmemexists('customId')){
             $customId = $response->structMem('customId')->scalarVal();
