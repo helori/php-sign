@@ -305,52 +305,26 @@ class PhpSignTest extends TestCase
 
         if($driverName === 'universign'){
             $driverConfig = [
-                'username' => 'helori.lanos@francescpi.com',
-                'password' => 'Melanie',
-                'profile' => 'production',
-                'mode' => 'test',
+                'username' => '<username>',
+                'password' => '<password>',
+                'profile' => '<universign_profile>',
+                'mode' => '<enviroment_type>',
             ];
         }else if($driverName === 'yousign'){
             $driverConfig = [
-                'api_key' => '47d7a349a9c043cc9e8852df28a41b36',
-                'mode' => 'test',
+                'api_key' => '<your_api_key>',
+                'mode' => '<enviroment_type>',
             ];
         }else if($driverName === 'docusign'){
 
             $driverConfig = [
-                'mode' => 'test',
-                'username' => 'helori@algoart.fr',
-                'password' => 'Melanie',
-                'integrator_key' => '3cdcc6e3-2e08-45ad-9076-0eb584732ea7',
-                'user_id' => '41cdc578-2686-4e82-b00d-c6b2b4997be0',
-                'redirect_uri' => 'https://algoart.fr/docusign-redirect',
-                'private_key' => '-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAlp2ONFQheEzpHJHTIbjLwNq6jBtKBqQ0YiYUvrwof9cmYOlX
-d2VoAs18/7NsdiqouFOdfSGXpY6VGPShqNb5BjoayjYW9iZOF7PT9c4sXehS8HKN
-nF3f1cS+GqklU61JNjONXUhty10hbyuHc+ZAMGk1kHMwAWMr93b6Yd/EbF6x0ig2
-2jULwOhl/jZ/tS23QeyWzgJMDcWFWDZMjpJ7v0PuYOY275ylKwhPaWbTTUQvT3Vn
-a14bPSKkimVt61w3yL2dLYjkz+mOZMiXl2TN54vjvA6/OjzSBmrAGaRr+lVqUDIk
-520df4vXWzDVTk4cLDIZDkkJQimhFTgqj59RmwIDAQABAoIBAAFXSsZVf2zKRoMO
-G1KgChRf/iw0K/8OJDdBforKMxQcTserHC/Ac+IegT/nkY4lyBXIDM1p6Kc9Mz+j
-IfNWYqY3CzkErUSox6Y3YCo+mS+G24Iviuo6/byyAT1MhzwM/Wthnx8W/39Bh4Qt
-X4ndIXIs5aCxHdrNTr1nzkfjzaRnWds9OuZYTrUu/afSX/y8GPDLELkn/bCT+FTb
-Hnu5kgI2/fB7O559TQb5V4pw9qoYPTV+uVPKcnE4sLaeyNfnZmfCNVQI83o7XehS
-NuSr91N5dVb/ogZRTWY70egMuJege7o16le8obq/pOn0srK++EfO31Qg7JfoZnKX
-HjIhzA0CgYEA8zuNWTQceLMZHd8OYbU9pJLRhdvowF94r84BDTL9Ns5aIBC3wt5V
-E6qaQC/7gJHiVUBxDifzaYyFtqaJFfhND47J4cu968M8nCx+j/r6f/ZMrj+nO+70
-QNbUKUKvJomkGZyl8wzkxzUCuS/kPA5r5ZJJv+rd83iNyZO8tM1Vdh0CgYEAnoV0
-2sOelXiNwwx/SgtOwxonV+xNYjDAsvTXbe6I4eHG2+zz1q9CE682VYQ4mnBmw5Sj
-59g+8CKgB2tuBLoi+9hIzsyAYgulpVv+CPolbK3/BCXES2CjShh1Z0tirCuPKHjq
-D1it3QjIAStABvUBkiyYqIxiNov4Qh8tdaY2eRcCgYBNL3+6aAQE9WiqBwesT/Rg
-zkp4/QEOUv2cZHYG90BNbQxCkquNxjofRIswhUl9Uk4NmaaGxHzE6Nfhz1U/SI1D
-u58q7Rm2wDzynlgHXrCxfLp2rTJnnXubO9EVytiEFTei/QfYaiYLZTIZDC6UNEtf
-DZ4jreeDBKWR6zT99w8ArQKBgQCX8m5/H1FMDuE7nCgK7mnRw6kAsyW9v+OF5gD1
-g9a7RbJarndQSm+49JLNR88F4kXupPSzT+mMPnRMiGJNr6nG45tudkF9OZLOvS30
-punmkaXG8PiGFByQ8n7ewzjStXIkpjoc+bC2FSu5Sx61THX0CkFOFjox9NrDbqUh
-h2/hgwKBgAuNmBm+nu0DvIrrdbkOc8DEj21vS5ECs+g3WYI71PbzoFpSq2vIkdzA
-jOAjMWrPLw7bF+3F+H30NvORcAA4Ae473GzQJq+jFpSi1mqysUpQhs1UI6ORXeTZ
-i6uxDixXfrGlEqZALmCFIihLQA1WBH/7zuVnLRgOEuKqiBjC0KjK
------END RSA PRIVATE KEY-----',
+                'mode' => '<enviroment_type>', // development environment or in production possible values (production, test, developer sandbox...)
+                'username' => '<username>', //optional
+                'password' => '<password>', //optional
+                'integrator_key' => '<application_integration_key>',
+                'user_id' => '<docusign_api_username>',
+                'redirect_uri' => '<application_redirect_uri>',
+                'private_key' => '<application_rsa_private_key>',
             ];
         }
         return new Requester($driverName, $driverConfig);

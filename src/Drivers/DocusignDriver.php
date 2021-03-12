@@ -26,6 +26,7 @@ use Helori\PhpSign\Elements\DocumentResult;
 use Helori\PhpSign\Elements\Webhook;
 use Helori\PhpSign\Exceptions\DriverAuthException;
 use Helori\PhpSign\Exceptions\SignException;
+use Helori\PhpSign\Exceptions\ValidationException;
 
 use Firebase\JWT\JWT;
 
