@@ -330,7 +330,7 @@ class YousignDriver implements DriverInterface
      */
     public function getExpirationDays()
     {
-        return 14;
+        return 30;
     }
 
     /**
