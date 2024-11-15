@@ -147,7 +147,7 @@ class RestApiRequester
                 //'Accept' => 'application/json',
                 'Authorization' => 'Bearer '.$this->apiKey,
             ], is_array($headers) ? $headers : []),
-            //'auth' => ['anystring', $this->apiKey], 
+            //'auth' => ['anystring', $this->apiKey],
             'http_errors' => false,
         ];
 
@@ -173,7 +173,7 @@ class RestApiRequester
         }
 
         $result = $client->request(
-            $verb, 
+            $verb,
             $this->endpoint.$url,
             $config
         );
