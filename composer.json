@@ -20,7 +20,7 @@
     "require": {
         "nesbot/carbon": "*",
         "phpxmlrpc/phpxmlrpc": "4.*",
-        "firebase/php-jwt": "^5.0",
+        "firebase/php-jwt": "^7.0",
         "guzzlehttp/guzzle": "^7.5",
         "symfony/dotenv": "^6.2"
     },
